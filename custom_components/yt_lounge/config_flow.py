@@ -8,13 +8,15 @@ from typing import Any
 
 import voluptuous as vol
 
+from googleapiclient.discovery import build
 from pyytlounge import YtLoungeApi
 
+from homeassistant import exceptions
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.util.uuid import random_uuid_hex
 
-from .const import CONF_AUTH_STATE, CONF_TV_CODE, DOMAIN
+from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_TV_CODE, DOMAIN
 from .coordinator import YTLoungeConfigEntry
 
 LOGGER = logging.getLogger(__name__)
@@ -22,6 +24,7 @@ LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_TV_CODE): str,
+        vol.Optional(CONF_API_KEY): str,
     }
 )
 
@@ -29,6 +32,14 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 def _generate_client_device_id() -> str:
     """Generate a random UUID4 string to identify ourselves."""
     return random_uuid_hex()
+
+def _test_api_key(key: str) -> bool:
+    youtube = build('youtube', 'v3', developerKey=key)
+    request = youtube.videos().list(part='snippet', id="jNQXAC9IVRw")
+    details = request.execute()
+
+    LOGGER.debug(f"YT API Response: {details}")
+    return True
 
 
 class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -49,6 +60,11 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
             LOGGER.debug(f"User Input: {user_input}")
 
             try:
+                if CONF_API_KEY in user_input:
+                    api_key_valid = await self.hass.async_add_executor_job(_test_api_key, user_input[CONF_API_KEY])
+                    if not api_key_valid:
+                        raise InvalidApiKey
+
                 async with YtLoungeApi("Test", None, LOGGER) as client:
                     pairing_code = user_input[CONF_TV_CODE]
                     LOGGER.debug(f"Pairing with code {pairing_code}...")
@@ -79,6 +95,8 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
+            except InvalidApiKey:
+                errors["base"] = "invalid_api_key"
             except Exception:
                 errors["base"] = "unknown"
                 LOGGER.exception("Unexpected exception")
@@ -89,7 +107,7 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
 
                 return self.async_create_entry(
                     title=screen_name,
-                    data={CONF_AUTH_STATE: auth_state, **user_input},
+                    data={CONF_AUTH_STATE: auth_state, CONF_API_KEY: user_input[CONF_API_KEY]},
                 )
 
         return self.async_show_form(
@@ -135,3 +153,10 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="reauth_confirm", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
         )
+
+class CannotConnect(exceptions.HomeAssistantError):
+    """Error to indicate the server is unreachable."""
+class InvalidAuth(exceptions.HomeAssistantError):
+    """Error to indicate the TV-code is incorrect."""
+class InvalidApiKey(exceptions.HomeAssistantError):
+    """Error to indicate API key is invalid."""

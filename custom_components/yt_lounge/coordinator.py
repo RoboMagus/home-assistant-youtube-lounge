@@ -6,6 +6,7 @@ import asyncio
 from datetime import timedelta
 from typing import Any, Optional
 
+from googleapiclient.discovery import build
 from pyytlounge import (
     YtLoungeApi,
     EventListener,
@@ -25,7 +26,7 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
-from .const import CONF_AUTH_STATE, CONF_SCREEN_ID, DOMAIN, LOGGER
+from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_SCREEN_ID, DOMAIN, LOGGER
 
 type YTLoungeConfigEntry = ConfigEntry[YTLoungeDataUpdateCoordinator]
 
@@ -53,9 +54,12 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         self.api_client.session = async_create_clientsession(hass, auto_cleanup=False)
 
         self.subscribe_task = None
+        self.last_video_id = None
         self.live_data = {
             'state': None,
             'video_id': None,
+            'video_title': None,
+            'channel': None,
             'current_time': None,
             'current_time_updated': None,
             'duration': None,
@@ -163,6 +167,18 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Get the latest data from Jellyfin."""
         LOGGER.debug(self.live_data)
+
+        def get_video_data(video_id: str, api_key: str) -> dict:
+            youtube = build('youtube', 'v3', developerKey=api_key)
+            request = youtube.videos().list(part='snippet', id=video_id)
+            return request.execute()
+
+        if (vid := self.live_data['video_id']) and vid != self.last_video_id:
+            self.last_video_id = vid
+            video_data = await self.hass.async_add_executor_job(get_video_data, vid, self.config_entry.data[CONF_API_KEY])
+            LOGGER.debug(f"YT API Response: {video_data}")
+            self.live_data['video_title'] = video_data['items'][0]['snippet']['title']
+            self.live_data['channel'] = video_data['items'][0]['snippet']['channelTitle']
 
         # ToDo: Fill structure...
         return {}

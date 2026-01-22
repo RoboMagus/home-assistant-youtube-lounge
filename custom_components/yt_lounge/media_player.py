@@ -107,6 +107,16 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
 
         return get_thumbnail_url(self.coordinator.live_data['video_id'])
 
+    @property
+    def media_title(self) -> str | None:
+        """Title of current playing media."""
+        return self.coordinator.live_data['video_title']
+
+    @property
+    def media_channel(self) -> str | None:
+        """Channel currently playing."""
+        return self.coordinator.live_data['channel']
+
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     #   State Properties
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
