@@ -1,0 +1,69 @@
+{
+  "name": "HA YouTube Lounge Dev Container",
+  "image": "ghcr.io/home-assistant/home-assistant:stable",
+  "postCreateCommand": "bash .devcontainer/scripts/setup.sh",
+  "postStartCommand": "bash .devcontainer/scripts/run.sh",
+  "containerEnv": {
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1"
+  },
+  "appPort": ["8123:8123"],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "davidanson.vscode-markdownlint",
+        "esbenp.prettier-vscode",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "oderwat.indent-rainbow",
+        "redhat.vscode-yaml",
+        "vscode-icons-team.vscode-icons"
+      ],
+      "settings": {
+        "chat.agent.enabled": false,
+        "chat.checkpoints.enabled": false,
+        "chat.commandCenter.enabled": false,
+        "chat.detectParticipant.enabled": false,
+        "chat.disableAIFeatures": true,
+        "chat.tools.todos.showWidget": false,
+        "chat.viewSessions.enabled": false,
+        "chat.extensionUnification.enabled": false,
+        "chat.mcp.access": "none",
+        "editor.aiStats.enabled": false,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4,
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": true,
+        "editor.formatOnType": false,
+        "files.autoSave": "off",
+        "files.eol": "\n",
+        "files.trimTrailingWhitespace": true,
+        "files.watcherExclude": {
+          "**/.git/objects/**": true,
+          "**/node_modules/**": true
+        },
+        "github.copilot.enable": {
+          "*": false
+        },
+        "github.copilot.nextEditSuggestions.enabled": false,
+        "indentRainbow.indicatorStyle": "light",
+        "indentRainbow.updateDelay": 250,
+        "indentRainbow.colors": [
+          "rgba(255,255,64,0.3)",
+          "rgba(127,255,127,0.3)",
+          "rgba(255,127,255,0.3)",
+          "rgba(79,236,236,0.3)"
+        ],
+        "workbench.iconTheme": "vscode-icons",
+        "yaml.customTags": [
+          "!secret scalar",
+          "!include scalar",
+          "!include_dir_list scalar",
+          "!include_dir_merge_list scalar",
+          "!include_dir_named scalar",
+          "!include_dir_merge_named scalar",
+          "!input scalar"
+        ]
+      }
+    }
+  }
+}

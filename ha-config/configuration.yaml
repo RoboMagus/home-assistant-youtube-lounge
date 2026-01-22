@@ -1,0 +1,40 @@
+
+homeassistant:
+  debug: true
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+frontend:
+
+http:
+  # Disable IP ban for dev purposes
+  ip_ban_enabled: false
+
+# https://www.home-assistant.io/integrations/logger/
+logger:
+  default: warning
+  logs:
+    # Core system - keep visible for important messages
+    homeassistant.core: info
+
+    # IMPORTANT for custom integration development:
+    # Coordinator issues (API calls, update failures)
+    homeassistant.helpers.update_coordinator: info
+    # Entity registration problems
+    homeassistant.helpers.entity_registry: info
+    # Config flow debugging (setup, options)
+    homeassistant.config_entries: info
+
+    # Debug logging for development on custom component
+    custom_components.yt_lounge: debug
+
+recorder:
+  purge_keep_days: 2
+  commit_interval: 30
+
+automation:
+
+script:
+
+scene:

@@ -1,0 +1,5 @@
+# Home Assistant configuration
+ha-config/*
+!ha-config/configuration.yaml
+
+__pycache__/
