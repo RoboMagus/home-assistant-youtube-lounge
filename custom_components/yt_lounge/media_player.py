@@ -42,7 +42,8 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     ) -> None:
         """Initialize the YTLounge Media Player entity."""
         super().__init__(coordinator)
-        self._attr_unique_id = coordinator.screen_id
+        self._attr_unique_id = f"{coordinator.screen_id}_mediaplayer"
+        self._attr_name = self.device_name
         self._attr_media_content_type = MediaType.VIDEO
 
     @callback

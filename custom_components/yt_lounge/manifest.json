@@ -10,7 +10,7 @@
   ],
   "config_flow": true,
   "documentation": "https://github.com/RoboMagus/home-assistant-youtube-lounge",
-  "integration_type": "hub",
+  "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/RoboMagus/home-assistant-youtube-lounge/issues",
   "loggers": [

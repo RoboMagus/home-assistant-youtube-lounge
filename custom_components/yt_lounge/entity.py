@@ -23,8 +23,6 @@ class YTLoungeEntity(CoordinatorEntity[YTLoungeDataUpdateCoordinator]):
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.screen_id)},
-            manufacturer="YouTube",
-            model=self.device_name,
-            name=self.screen_name,
+            model=self.screen_name,
+            name=self.device_name,
         )
-        self._attr_name = None
