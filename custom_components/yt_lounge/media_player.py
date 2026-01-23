@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant import exceptions
 from homeassistant.components.media_player import (
     ATTR_MEDIA_ENQUEUE,
     MediaPlayerEnqueue,
@@ -19,7 +20,7 @@ from homeassistant.util.dt import parse_datetime
 from pyytlounge.api import get_thumbnail_url
 from pyytlounge.models import State as PlaybackState
 
-from .const import LOGGER
+from .const import DOMAIN, LOGGER
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
 from .entity import YTLoungeEntity
 
@@ -164,8 +165,10 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
             LOGGER.debug(f"Add to queue: {media_id}   >   {res}")
         elif enqueue == MediaPlayerEnqueue.NEXT:
             # play the given media item next, keep queue
-            res = await self.coordinator.api_client._command("addVideo", {"videoId": media_id})        # Does not work
-            LOGGER.debug(f"Add to queue (Next): {media_id}   >   {res}")
+            raise exceptions.HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="play_next_unsupported",
+            )
         elif enqueue == MediaPlayerEnqueue.PLAY:
             # play the given media item now, keep queue
             res = await self.coordinator.api_client._command("setVideo", {"videoId": media_id})

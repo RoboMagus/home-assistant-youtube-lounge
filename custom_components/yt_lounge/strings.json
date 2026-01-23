@@ -24,5 +24,10 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "play_next_unsupported": {
+      "message": "Play next is not supported"
+    }
   }
 }
