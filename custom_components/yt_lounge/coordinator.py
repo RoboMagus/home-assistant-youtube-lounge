@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any, Optional
 
 from googleapiclient.discovery import build
@@ -23,6 +23,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
@@ -107,6 +108,20 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         self.config_entry.async_on_unload(
             self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_stop)
         )
+
+        # Refresh auth every 72 hours; safe margin within 13 day limit
+        async_track_time_interval(
+            self.hass, self.refresh_auth, timedelta(hours=72), cancel_on_shutdown=True
+        )
+
+    async def refresh_auth(self, _now: datetime|None = None) -> None:
+        await self.api_client.refresh_auth()
+
+        data = {
+            **self.config_entry.data,
+            CONF_AUTH_STATE: self.api_client.auth.serialize(),
+        }
+        self.hass.config_entries.async_update_entry(self.config_entry, data=data)
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
