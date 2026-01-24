@@ -126,6 +126,18 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         }
         self.hass.config_entries.async_update_entry(self.config_entry, data=data)
 
+    async def command(self, func_name: str, **kwargs) -> Any:
+        f = getattr(self.api_client, func_name, None)
+        if not f:
+            raise NoSuchMethod
+
+        if not self.api_client.connected():
+            LOGGER.debug(f"Client not connected when calling {func_name}, trying to connect...")
+            await self.api_client.connect()
+
+        LOGGER.debug(f"Command: {func_name}({kwargs})")
+        return await f(**kwargs)
+
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -203,3 +215,6 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
 
 class CannotConnect(exceptions.HomeAssistantError):
     """Error to indicate the server is unreachable."""
+
+class NoSuchMethod(exceptions.HomeAssistantError):
+    """Requested method does not exist."""

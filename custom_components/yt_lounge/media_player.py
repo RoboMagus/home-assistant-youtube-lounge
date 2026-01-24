@@ -186,12 +186,12 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     async def async_media_pause(self) -> None:
         """Send pause command."""
         LOGGER.info("Pause...")
-        await self.coordinator.api_client.pause()
+        await self.coordinator.command('pause')
 
     async def async_media_play(self) -> None:
         """Send play command."""
         LOGGER.info("Play...")
-        await self.coordinator.api_client.play()
+        await self.coordinator.command('play')
 
     async def async_play_media(
         self, media_type: MediaType | str, media_id: str, **kwargs: Any
@@ -205,7 +205,7 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
         # False => unsuccesfull...
         if enqueue == MediaPlayerEnqueue.ADD:
             # add given media item to end of the queue
-            res = await self.coordinator.api_client._command("addVideo", {"videoId": media_id})
+            res = await self.coordinator.command('_command', command='addVideo', command_parameters={"videoId": media_id})
             LOGGER.debug(f"Add to queue: {media_id}   >   {res}")
         elif enqueue == MediaPlayerEnqueue.NEXT:
             # play the given media item next, keep queue
@@ -215,29 +215,29 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
             )
         elif enqueue == MediaPlayerEnqueue.PLAY:
             # play the given media item now, keep queue
-            res = await self.coordinator.api_client._command("setVideo", {"videoId": media_id})
+            res = await self.coordinator.command('_command', command='setVideo', command_parameters={"videoId": media_id})
             LOGGER.debug(f"Play now (keep queue): {media_id}   >   {res}")
         else: # REPLACE
             # play the given media item now, clear queue
-            res = await self.coordinator.api_client.play_video(media_id)
+            res = await self.coordinator.command('play_video', video_id=media_id)
             LOGGER.debug(f"Play now (clear queue): {media_id}   >   {res}")
 
     async def async_media_previous_track(self) -> None:
         """Send previous track command."""
-        await self.coordinator.api_client.previous()
+        await self.coordinator.command('previous')
 
     async def async_media_next_track(self) -> None:
         """Send next track command."""
-        await self.coordinator.api_client.next()
+        await self.coordinator.command('next')
 
     async def async_media_seek(self, position: float) -> None:
         """Send seek command."""
-        LOGGER.debug(f"seek_to({position})")
-        await self.coordinator.api_client.seek_to(position)
+        await self.coordinator.command('seek_to', time=position)
 
     async def async_set_volume_level(self, volume: float) -> None:
         """Set volume level, range 0..1."""
-        await self.coordinator.api_client.set_volume(int(volume * 100))
+        await self.coordinator.command('set_volume', volume=int(volume * 100))
+
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     #   Actions
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
