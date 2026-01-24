@@ -1,0 +1,10 @@
+{
+    "services": {
+        "connect": {
+            "service": "mdi:connection"
+        },
+        "subscribe": {
+            "service": "mdi:connection"
+        }
+    }
+}

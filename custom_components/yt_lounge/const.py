@@ -14,5 +14,8 @@ CONF_SCREEN_ID: Final = "screen_id"
 CONF_SCREEN_NAME: Final = "screen_name"
 CONF_TV_CODE: Final = "tv_code"
 
+SERVICE_CONNECT = "connect"
+SERVICE_SUBSCRIBE = "subscribe"
+
 PLATFORMS = [Platform.MEDIA_PLAYER, Platform.SENSOR]
 LOGGER = logging.getLogger(__package__)

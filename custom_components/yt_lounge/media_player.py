@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from time import time
 from typing import Any
 
 from homeassistant import exceptions
@@ -13,14 +14,18 @@ from homeassistant.components.media_player import (
     MediaPlayerState,
     MediaType,
 )
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.core import HomeAssistant, callback, ServiceResponse, SupportsResponse
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback,
+    async_get_current_platform,
+)
 from homeassistant.util.dt import parse_datetime
 
 from pyytlounge.api import get_thumbnail_url
 from pyytlounge.models import State as PlaybackState
 
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN, LOGGER, SERVICE_CONNECT, SERVICE_SUBSCRIBE
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
 from .entity import YTLoungeEntity
 
@@ -32,6 +37,20 @@ async def async_setup_entry(
     """Set up YTLounge media_player from a config entry."""
     coordinator = entry.runtime_data
     async_add_entities([YTLoungeMediaPlayer(coordinator)])
+
+    platform = async_get_current_platform()
+    platform.async_register_entity_service(
+        name=SERVICE_CONNECT,
+        schema=None,
+        func="async_connect",
+        supports_response=SupportsResponse.OPTIONAL
+    )
+    platform.async_register_entity_service(
+        name=SERVICE_SUBSCRIBE,
+        schema=None,
+        func="async_subscribe",
+        supports_response=SupportsResponse.OPTIONAL
+    )
 
 class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     """Represents a YTLounge Player device."""
@@ -49,6 +68,30 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         super()._handle_coordinator_update()
+
+    async def async_connect(self) -> ServiceResponse:
+        """Connect Service-Call."""
+        LOGGER.info("async_connect()")
+        paired = self.coordinator.api_client.paired()
+        linked = self.coordinator.api_client.linked()
+        connected = self.coordinator.api_client.connected()
+        LOGGER.info(f"Paired({paired}), Linked({linked}), Connected({connected})")
+
+        connected = await self.coordinator.api_client.connect()
+        LOGGER.info(f"Connection succes: {connected}")
+
+        return {
+            "connected": connected,
+        }
+
+    async def async_subscribe(self) -> ServiceResponse:
+        """Subscribe Service-Call."""
+        t0 = time()
+        await self.coordinator.api_client.subscribe()
+        t1 = time()
+        return {
+            "time_elapsed": t1-t0,
+        }
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   State Properties

@@ -29,5 +29,27 @@
     "play_next_unsupported": {
       "message": "Play next is not supported"
     }
+  },
+  "services": {
+    "connect": {
+      "description": "Manually try to (re-)connect.",
+      "fields": {
+        "entity_id": {
+          "description": "YTLounge entity to connect.",
+          "name": "Entity"
+        }
+      },
+      "name": "Connect"
+    },
+    "subscribe": {
+      "description": "Manually force (re-)subscribe.",
+      "fields": {
+        "entity_id": {
+          "description": "YTLounge entity to subscribe.",
+          "name": "Entity"
+        }
+      },
+      "name": "Subscribe"
+    }
   }
 }
