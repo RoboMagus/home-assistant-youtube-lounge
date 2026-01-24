@@ -27,7 +27,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
-from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_SCREEN_ID, DOMAIN, LOGGER
+from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_ID, CONF_SCREEN_NAME, DOMAIN, LOGGER
 
 type YTLoungeConfigEntry = ConfigEntry[YTLoungeDataUpdateCoordinator]
 
@@ -53,6 +53,9 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
 
         self.api_client = YtLoungeApi("Test", self, LOGGER)
         self.api_client.session = async_create_clientsession(hass, auto_cleanup=False)
+
+        self.screen_name = config_entry.data[CONF_SCREEN_NAME]
+        self.device_name = config_entry.data[CONF_DEVICE_NAME]
 
         self.subscribe_task = None
         self.last_video_id = None

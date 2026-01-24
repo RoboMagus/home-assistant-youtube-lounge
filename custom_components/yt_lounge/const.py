@@ -9,7 +9,9 @@ DOMAIN: Final = "yt_lounge"
 
 CONF_API_KEY: Final = "api_key"
 CONF_AUTH_STATE: Final = "auth_state"
+CONF_DEVICE_NAME: Final = "device_name"
 CONF_SCREEN_ID: Final = "screen_id"
+CONF_SCREEN_NAME: Final = "screen_name"
 CONF_TV_CODE: Final = "tv_code"
 
 PLATFORMS = [Platform.MEDIA_PLAYER, Platform.SENSOR]

@@ -16,7 +16,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFl
 from homeassistant.core import callback
 from homeassistant.util.uuid import random_uuid_hex
 
-from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_TV_CODE, DOMAIN
+from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_NAME, CONF_TV_CODE, DOMAIN
 from .coordinator import YTLoungeConfigEntry
 
 LOGGER = logging.getLogger(__name__)
@@ -27,7 +27,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Optional(CONF_API_KEY): str,
     }
 )
-
 
 def _generate_client_device_id() -> str:
     """Generate a random UUID4 string to identify ourselves."""
@@ -107,7 +106,12 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
 
                 return self.async_create_entry(
                     title=screen_name,
-                    data={CONF_AUTH_STATE: auth_state, CONF_API_KEY: user_input[CONF_API_KEY]},
+                    data={
+                        CONF_AUTH_STATE: auth_state,
+                        CONF_API_KEY: user_input[CONF_API_KEY],
+                        CONF_DEVICE_NAME: device_name,
+                        CONF_SCREEN_NAME: screen_name,
+                    },
                 )
 
         return self.async_show_form(

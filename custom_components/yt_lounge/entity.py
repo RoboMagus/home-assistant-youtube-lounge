@@ -18,8 +18,8 @@ class YTLoungeEntity(CoordinatorEntity[YTLoungeDataUpdateCoordinator]):
     ) -> None:
         """Initialize the YouTube Lounge entity."""
         super().__init__(coordinator)
-        self.device_name: str = coordinator.device_name or "?"
-        self.screen_name: str = coordinator.screen_name or "?"
+        self.device_name: str = coordinator.device_name
+        self.screen_name: str = coordinator.screen_name
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.screen_id)},
