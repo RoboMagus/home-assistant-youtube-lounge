@@ -48,7 +48,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
             logger=LOGGER,
             config_entry=config_entry,
             name=DOMAIN,
-            update_interval=timedelta(seconds=10),
+            update_interval=timedelta(seconds=60),
         )
 
         self.api_client = YtLoungeApi("Test", self, LOGGER)
@@ -151,6 +151,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         LOGGER.debug(
             f"New state: {event.state} = id: {self.live_data['video_id']} pos: {event.current_time} duration: {event.duration}"
         )
+        await self.async_request_refresh()
 
     async def now_playing_changed(self, event: NowPlayingEvent) -> None:
         """Called when active video changes"""
@@ -163,6 +164,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         LOGGER.debug(
             f"New state: {event.state} = id: {event.video_id} pos: {event.current_time} duration: {event.duration}"
         )
+        await self.async_request_refresh()
 
     async def volume_changed(self, event: VolumeChangedEvent) -> None:
         """Called when volume or muted state changes"""
@@ -170,6 +172,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         self.live_data['volume'] = event.volume
         self.live_data['muted'] = event.muted
         LOGGER.debug(f"Volume changed: {event.volume}% muted: {event.muted}")
+        await self.async_request_refresh()
 
     async def autoplay_changed(self, event: AutoplayModeChangedEvent) -> None:
         """Called when auto play mode changes"""
@@ -178,18 +181,21 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         LOGGER.debug(
             f"Auto play changed: {event.enabled} {'(not supported)' if not event.supported else ''}"
         )
+        await self.async_request_refresh()
 
     async def playback_speed_changed(self, event: PlaybackSpeedEvent) -> None:
         """Called when playback speed changes"""
         self.live_data['connected'] = True
         self.live_data['playback_speed'] = event.playback_speed
         LOGGER.debug(f"Playback speed changed: {event.playback_speed}")
+        await self.async_request_refresh()
 
     async def disconnected(self, event: DisconnectedEvent) -> None:
         """Called when the screen is no longer connected"""
         self.live_data['connected'] = False
         self.live_data['video_id'] = None
         LOGGER.debug(f"Disconnected with Reason: {event.reason}")
+        await self.async_request_refresh()
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     #   YTLounge Event listener hooks
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
