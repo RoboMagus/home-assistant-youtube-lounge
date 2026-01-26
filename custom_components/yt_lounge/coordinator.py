@@ -102,7 +102,9 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         @callback
         def _async_stop(_: Event) -> None:
             self.api_client.session.detach()
-            self.subscribe(False)
+            if self.subscribe_task is not None:
+                self.subscribe_task.cancel()
+                self.subscribe_task = None
 
         # Make sure task is cancelled on shutdown (or tests complete)
         self.config_entry.async_on_unload(
@@ -128,9 +130,13 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         if not f:
             raise NoSuchMethod
 
-        if not self.api_client.connected():
+        if not self.connected:
             LOGGER.debug(f"Client not connected when calling {func_name}, trying to connect...")
             await self.api_client.connect()
+
+        if not self.subscribed:
+            LOGGER.debug(f"Subscribtion inactive when calling {func_name}, trying to subscribe...")
+            await self.subscribe(True)
 
         LOGGER.debug(f"Command: {func_name}({kwargs})")
         return await f(**kwargs)

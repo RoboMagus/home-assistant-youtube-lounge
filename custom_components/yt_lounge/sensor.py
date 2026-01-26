@@ -70,6 +70,11 @@ class YTLoungeSensor(YTLoungeEntity, SensorEntity):
         self._attr_name = f"{self.device_name} {description.name}"
 
     @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return self.coordinator.connected and self.coordinator.subscribed
+
+    @property
     def native_value(self) -> StateType:
         """Sensor status direct from live coordinator data."""
         return cast(StateType, self.coordinator.live_data[self.entity_description.key])
