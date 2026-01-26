@@ -16,7 +16,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFl
 from homeassistant.core import callback
 from homeassistant.util.uuid import random_uuid_hex
 
-from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_NAME, CONF_TV_CODE, DOMAIN
+from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_NAME, CONF_SCREEN_ID, CONF_TV_CODE, DOMAIN
 from .coordinator import YTLoungeConfigEntry
 
 LOGGER = logging.getLogger(__name__)
@@ -64,14 +64,13 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
                     if not api_key_valid:
                         raise InvalidApiKey
 
-                async with YtLoungeApi("Test", None, LOGGER) as client:
+                async with YtLoungeApi("HA ConfigFlow", None, logging.getLogger(f"{__package__}.pyytlounge")) as client:
                     pairing_code = user_input[CONF_TV_CODE]
                     LOGGER.debug(f"Pairing with code {pairing_code}...")
                     paired = await client.pair(pairing_code)
                     LOGGER.debug(paired and "success" or "failed")
                     if not paired:
                         raise CannotConnect
-
 
                     is_available = await client.is_available()
                     LOGGER.debug(f"Screen availability: {is_available}")
@@ -83,9 +82,11 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
                         raise CannotConnect
 
                     auth_state = client.auth.serialize()
+                    screen_id = client.screen_id
                     screen_name = client.screen_name
                     device_name = client.screen_device_name
                     LOGGER.debug(f"AuthState: {auth_state}")
+                    LOGGER.debug(f"ScreenName: {screen_id}")
                     LOGGER.debug(f"ScreenName: {screen_name}")
                     LOGGER.debug(f"DeviceName: {device_name}")
 
@@ -111,6 +112,7 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_API_KEY: user_input[CONF_API_KEY],
                         CONF_DEVICE_NAME: device_name,
                         CONF_SCREEN_NAME: screen_name,
+                        CONF_SCREEN_ID: screen_id,
                     },
                 )
 

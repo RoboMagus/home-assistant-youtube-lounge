@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from time import time
 from typing import Any
 
@@ -20,14 +21,15 @@ from homeassistant.helpers.entity_platform import (
     AddConfigEntryEntitiesCallback,
     async_get_current_platform,
 )
-from homeassistant.util.dt import parse_datetime
 
 from pyytlounge.api import get_thumbnail_url
 from pyytlounge.models import State as PlaybackState
 
-from .const import DOMAIN, LOGGER, SERVICE_CONNECT, SERVICE_GET_NOW_PLAYING, SERVICE_SUBSCRIBE
+from .const import DOMAIN, SERVICE_CONNECT, SERVICE_GET_NOW_PLAYING, SERVICE_SUBSCRIBE
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
 from .entity import YTLoungeEntity
+
+LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,

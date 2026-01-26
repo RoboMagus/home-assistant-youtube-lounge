@@ -1,6 +1,5 @@
 """Consts for Cast integration."""
 
-import logging
 from typing import Final
 
 from homeassistant.const import Platform
@@ -19,4 +18,3 @@ SERVICE_GET_NOW_PLAYING = "get_now_playing"
 SERVICE_SUBSCRIBE = "subscribe"
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.SENSOR, Platform.SWITCH]
-LOGGER = logging.getLogger(__package__)

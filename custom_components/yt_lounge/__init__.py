@@ -5,8 +5,6 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
-from pyytlounge import YtLoungeApi
-
 from .const import DOMAIN, PLATFORMS
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
 
@@ -22,10 +20,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: YTLoungeConfigEntry) -> 
     device_registry = dr.async_get(hass)
     device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        entry_type=dr.DeviceEntryType.SERVICE,
         identifiers={(DOMAIN, coordinator.screen_id)},
-        manufacturer="YouTube",
-        name="Dummy",
+        manufacturer=coordinator.device_name.split(" ")[0],
+        model=coordinator.device_name.split(" ")[1],
+        name=coordinator.screen_name,
     )
 
     entry.runtime_data = coordinator
@@ -44,11 +42,4 @@ async def async_remove_config_entry_device(
     hass: HomeAssistant, config_entry: YTLoungeConfigEntry, device_entry: dr.DeviceEntry
 ) -> bool:
     """Remove device from a config entry."""
-    coordinator = config_entry.runtime_data
-
-    return not device_entry.identifiers.intersection(
-        (
-            (DOMAIN, coordinator.server_id),
-            *((DOMAIN, device_id) for device_id in coordinator.device_ids),
-        )
-    )
+    return True

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timedelta
+import logging
 from typing import Any, Optional
 from time import time
 
@@ -28,10 +29,11 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
-from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_ID, CONF_SCREEN_NAME, DOMAIN, LOGGER
+from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_ID, CONF_SCREEN_NAME, DOMAIN
+
+LOGGER = logging.getLogger(__name__)
 
 type YTLoungeConfigEntry = ConfigEntry[YTLoungeDataUpdateCoordinator]
-
 
 class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]], EventListener):
     """Data update coordinator for the Jellyfin integration."""
@@ -52,9 +54,10 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
             update_interval=timedelta(seconds=60),
         )
 
-        self.api_client = YtLoungeApi("Test", self, LOGGER)
+        self.api_client = YtLoungeApi("HomeAssistant", self, logging.getLogger(f"{__package__}.pyytlounge"))
         self.api_client.session = async_create_clientsession(hass, auto_cleanup=False)
 
+        self.screen_id = config_entry.data[CONF_SCREEN_ID]
         self.screen_name = config_entry.data[CONF_SCREEN_NAME]
         self.device_name = config_entry.data[CONF_DEVICE_NAME]
 
@@ -92,9 +95,6 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         if not connected:
             raise CannotConnect
 
-        self.screen_id = self.api_client.auth.screen_id
-        self.screen_name = self.api_client.screen_name
-        self.device_name = self.api_client.screen_device_name
         LOGGER.debug(f"ScreenID: {self.screen_id}")
         LOGGER.debug(f"ScreenName: {self.screen_name}")
         LOGGER.debug(f"DeviceName: {self.device_name}")
@@ -164,11 +164,14 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
                 async def subscribe_keepalive():
                     while True:
                         t0 = time()
+                        if not self.connected:
+                            LOGGER.debug("Client not connected in subscribe task, trying to connect...")
+                            await self.api_client.connect()
                         await self.api_client.subscribe()
                         t1 = time()
                         LOGGER.info(f"Subscribe Keepalive; refresh after {t1 - t0}")
 
-                self.subscribe_task = asyncio.create_task(subscribe_keepalive())
+                self.subscribe_task = asyncio.create_task(subscribe_keepalive(), name="YtLounge-Subscribe")
             else:
                 if self.subscribe_task is not None:
                     self.subscribe_task.cancel()
