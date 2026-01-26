@@ -138,6 +138,18 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         LOGGER.debug(f"Command: {func_name}({kwargs})")
         return await f(**kwargs)
 
+    @property
+    def paired(self) -> bool:
+        return self.api_client.paired()
+
+    @property
+    def linked(self) -> bool:
+        return self.api_client.linked()
+
+    @property
+    def connected(self) -> bool:
+        return self.api_client.connected()
+
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

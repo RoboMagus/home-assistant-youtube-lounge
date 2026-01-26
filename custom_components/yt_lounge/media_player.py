@@ -78,9 +78,9 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     async def async_connect(self) -> ServiceResponse:
         """Connect Service-Call."""
         LOGGER.info("async_connect()")
-        paired = self.coordinator.api_client.paired()
-        linked = self.coordinator.api_client.linked()
-        connected = self.coordinator.api_client.connected()
+        paired = self.coordinator.paired
+        linked = self.coordinator.linked
+        connected = self.coordinator.connected
         LOGGER.info(f"Paired({paired}), Linked({linked}), Connected({connected})")
 
         connected = await self.coordinator.api_client.connect()

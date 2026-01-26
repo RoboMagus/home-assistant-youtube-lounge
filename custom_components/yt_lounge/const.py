@@ -18,5 +18,5 @@ SERVICE_CONNECT = "connect"
 SERVICE_GET_NOW_PLAYING = "get_now_playing"
 SERVICE_SUBSCRIBE = "subscribe"
 
-PLATFORMS = [Platform.MEDIA_PLAYER, Platform.SENSOR]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.SENSOR]
 LOGGER = logging.getLogger(__package__)
