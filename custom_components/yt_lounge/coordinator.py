@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timedelta
 from typing import Any, Optional
+from time import time
 
 from googleapiclient.discovery import build
 from pyytlounge import (
@@ -98,14 +99,10 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         LOGGER.debug(f"ScreenName: {self.screen_name}")
         LOGGER.debug(f"DeviceName: {self.device_name}")
 
-        # Subscribe may take a LONG while... run in background instead
-        self.subscribe_task = asyncio.create_task(self.api_client.subscribe())
-
         @callback
         def _async_stop(_: Event) -> None:
             self.api_client.session.detach()
-            if self.subscribe_task is not None:
-                self.subscribe_task.cancel()
+            self.subscribe(False)
 
         # Make sure task is cancelled on shutdown (or tests complete)
         self.config_entry.async_on_unload(
@@ -149,6 +146,29 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
     @property
     def connected(self) -> bool:
         return self.api_client.connected()
+
+    @property
+    def subscribed(self) -> bool:
+        return self.subscribe_task is not None
+
+    async def subscribe(self, enable: bool):
+        if enable != self.subscribed:
+            LOGGER.info(f"Subscribe({enable})")
+            if enable:
+                async def subscribe_keepalive():
+                    while True:
+                        t0 = time()
+                        await self.api_client.subscribe()
+                        t1 = time()
+                        LOGGER.info(f"Subscribe Keepalive; refresh after {t1 - t0}")
+
+                self.subscribe_task = asyncio.create_task(subscribe_keepalive())
+            else:
+                if self.subscribe_task is not None:
+                    self.subscribe_task.cancel()
+                    self.subscribe_task = None
+
+        await self.async_request_refresh()
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
