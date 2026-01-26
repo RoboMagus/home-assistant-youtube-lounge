@@ -200,12 +200,10 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     async def async_media_pause(self) -> None:
         """Send pause command."""
-        LOGGER.info("Pause...")
         await self.coordinator.command('pause')
 
     async def async_media_play(self) -> None:
         """Send play command."""
-        LOGGER.info("Play...")
         await self.coordinator.command('play')
 
     async def async_play_media(

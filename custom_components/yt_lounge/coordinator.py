@@ -81,23 +81,11 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
 
-        # ToDo: Handle path with pairing code in config_flow!
-        LOGGER.debug(f"Initializing with config_entry.data: {self.config_entry.data}")
-
         self.api_client.load_auth_state(self.config_entry.data[CONF_AUTH_STATE])
-        LOGGER.debug(f"API: {self.api_client}")
-        is_available = await self.api_client.is_available()
-        LOGGER.debug(f"Screen availability: {is_available}")
 
-        LOGGER.debug("Connecting...")
         connected = await self.api_client.connect()
-        LOGGER.debug(connected and "success" or "failed")
         if not connected:
             raise CannotConnect
-
-        LOGGER.debug(f"ScreenID: {self.screen_id}")
-        LOGGER.debug(f"ScreenName: {self.screen_name}")
-        LOGGER.debug(f"DeviceName: {self.device_name}")
 
         @callback
         def _async_stop(_: Event) -> None:
@@ -239,6 +227,8 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         """Called when the screen is no longer connected"""
         self.live_data['connected'] = False
         self.live_data['video_id'] = None
+        self.live_data['video_title'] = None
+        self.live_data['channel'] = None
         LOGGER.debug(f"Disconnected with Reason: {event.reason}")
         await self.async_request_refresh()
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -260,6 +250,9 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
             LOGGER.debug(f"YT API Response: {video_data}")
             self.live_data['video_title'] = video_data['items'][0]['snippet']['title']
             self.live_data['channel'] = video_data['items'][0]['snippet']['channelTitle']
+        if not self.live_data['video_id']:
+            self.live_data['video_title'] = None
+            self.live_data['channel'] = None
 
         # ToDo: Fill structure...
         return {}
