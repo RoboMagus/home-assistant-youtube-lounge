@@ -112,11 +112,6 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     #   State Properties
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self.coordinator.connected and self.coordinator.subscribed
-
-    @property
     def state(self) -> MediaPlayerState | None:
         """State of the player."""
         state_map = {
@@ -127,7 +122,7 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
             PlaybackState.Starting: MediaPlayerState.BUFFERING,
         }
 
-        if self.coordinator.live_data['connected']:
+        if self.coordinator.connected and self.coordinator.subscribed:
             return state_map.get(self.coordinator.live_data['state'], MediaPlayerState.IDLE)
         else:
             return MediaPlayerState.OFF

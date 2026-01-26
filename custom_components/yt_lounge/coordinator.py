@@ -25,7 +25,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
-from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
@@ -125,6 +125,9 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         }
         self.hass.config_entries.async_update_entry(self.config_entry, data=data)
 
+    async def get_now_playing(self, now: datetime | None = None) -> None:
+        await self.api_client.get_now_playing()
+
     async def command(self, func_name: str, **kwargs) -> Any:
         f = getattr(self.api_client, func_name, None)
         if not f:
@@ -172,6 +175,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
                         LOGGER.info(f"Subscribe Keepalive; refresh after {t1 - t0}")
 
                 self.subscribe_task = asyncio.create_task(subscribe_keepalive(), name="YtLounge-Subscribe")
+                async_call_later(self.hass, timedelta(seconds=3), self.get_now_playing)
             else:
                 if self.subscribe_task is not None:
                     self.subscribe_task.cancel()
@@ -192,7 +196,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         LOGGER.debug(
             f"New state: {event.state} = id: {self.live_data['video_id']} pos: {event.current_time} duration: {event.duration}"
         )
-        await self.async_request_refresh()
+        await self.async_refresh()
 
     async def now_playing_changed(self, event: NowPlayingEvent) -> None:
         """Called when active video changes"""
@@ -205,7 +209,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
         LOGGER.debug(
             f"New state: {event.state} = id: {event.video_id} pos: {event.current_time} duration: {event.duration}"
         )
-        await self.async_request_refresh()
+        await self.async_refresh()
 
     async def volume_changed(self, event: VolumeChangedEvent) -> None:
         """Called when volume or muted state changes"""
