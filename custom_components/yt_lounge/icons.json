@@ -3,6 +3,9 @@
         "connect": {
             "service": "mdi:connection"
         },
+        "get_now_playing": {
+            "service": "mdi:movie-search"
+        },
         "subscribe": {
             "service": "mdi:connection"
         }

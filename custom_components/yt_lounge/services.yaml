@@ -7,6 +7,15 @@ connect:
           integration: yt_lounge
           domain: media_player
 
+get_now_playing:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          integration: yt_lounge
+          domain: media_player
+
 subscribe:
   fields:
     entity_id:

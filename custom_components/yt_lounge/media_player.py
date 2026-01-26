@@ -25,7 +25,7 @@ from homeassistant.util.dt import parse_datetime
 from pyytlounge.api import get_thumbnail_url
 from pyytlounge.models import State as PlaybackState
 
-from .const import DOMAIN, LOGGER, SERVICE_CONNECT, SERVICE_SUBSCRIBE
+from .const import DOMAIN, LOGGER, SERVICE_CONNECT, SERVICE_GET_NOW_PLAYING, SERVICE_SUBSCRIBE
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
 from .entity import YTLoungeEntity
 
@@ -44,6 +44,12 @@ async def async_setup_entry(
         schema=None,
         func="async_connect",
         supports_response=SupportsResponse.OPTIONAL
+    )
+    platform.async_register_entity_service(
+        name=SERVICE_GET_NOW_PLAYING,
+        schema=None,
+        func="async_get_now_playing",
+        supports_response=SupportsResponse.ONLY
     )
     platform.async_register_entity_service(
         name=SERVICE_SUBSCRIBE,
@@ -82,6 +88,13 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
 
         return {
             "connected": connected,
+        }
+
+    async def async_get_now_playing(self) -> ServiceResponse:
+        """Get now playing Service-Call."""
+        r = await self.coordinator.command('get_now_playing')
+        return {
+            "now_playing": r,
         }
 
     async def async_subscribe(self) -> ServiceResponse:

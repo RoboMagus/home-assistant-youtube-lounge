@@ -15,6 +15,7 @@ CONF_SCREEN_NAME: Final = "screen_name"
 CONF_TV_CODE: Final = "tv_code"
 
 SERVICE_CONNECT = "connect"
+SERVICE_GET_NOW_PLAYING = "get_now_playing"
 SERVICE_SUBSCRIBE = "subscribe"
 
 PLATFORMS = [Platform.MEDIA_PLAYER, Platform.SENSOR]

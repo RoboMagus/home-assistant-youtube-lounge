@@ -41,6 +41,16 @@
       },
       "name": "Connect"
     },
+    "get_now_playing": {
+      "description": "get_now_playing",
+      "fields": {
+        "entity_id": {
+          "description": "YTLounge entity",
+          "name": "Entity"
+        }
+      },
+      "name": "get_now_playing"
+    },
     "subscribe": {
       "description": "Manually force (re-)subscribe.",
       "fields": {
