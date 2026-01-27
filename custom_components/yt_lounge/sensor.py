@@ -1,4 +1,4 @@
-"""Platform for sensor integration for YTLounge."""
+"""Platform for sensor integration for YouTube Lounge."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Config flow for the Jellyfin integration."""
+"""Config flow for the YouTube Lounge integration."""
 
 from __future__ import annotations
 
@@ -74,12 +74,12 @@ async def _test_tv_key(pairing_code: str) -> Dict[str, Any]:
         }
 
 class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Jellyfin."""
+    """Handle a config flow for YouTube Lounge."""
 
     VERSION = 1
 
     def __init__(self) -> None:
-        """Initialize the Jellyfin config flow."""
+        """Initialize the YouTube Lounge config flow."""
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

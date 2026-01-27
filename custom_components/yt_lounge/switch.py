@@ -1,4 +1,4 @@
-"""Platform for switch integration for YTLounge."""
+"""Platform for switch integration for YouTube Lounge."""
 
 from __future__ import annotations
 

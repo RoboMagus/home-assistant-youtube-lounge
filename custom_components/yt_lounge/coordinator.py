@@ -1,4 +1,4 @@
-"""Data update coordinator for the Jellyfin integration."""
+"""Data update coordinator for the YouTube Lounge integration."""
 
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ def PlaybackState2MediaPlayerState(state: PlaybackState) -> MediaPlayerState:
     return state_map.get(state, MediaPlayerState.IDLE)
 
 class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventListener):
-    """Data update coordinator for the Jellyfin integration."""
+    """Data update coordinator for the YouTube Lounge integration."""
 
     config_entry: YTLoungeConfigEntry
 
@@ -271,7 +271,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     async def _async_update_data(self) -> YtLoungeData:
-        """Get the latest data from Jellyfin."""
+        """Get the latest data from YTLounge API."""
         LOGGER.debug(self.live_data)
 
         def get_video_data(video_id: str, api_key: str) -> dict:

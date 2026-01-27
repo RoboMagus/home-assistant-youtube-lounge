@@ -1,4 +1,4 @@
-"""Consts for Cast integration."""
+"""Consts for YouTube Lounge integration."""
 
 from typing import Final
 
