@@ -70,6 +70,11 @@ def PlaybackState2MediaPlayerState(state: PlaybackState) -> MediaPlayerState:
 
     return state_map.get(state, MediaPlayerState.IDLE)
 
+async def _async_get_video_data(hass: HomeAssistant, video_id: str, api_key: str) -> dict:
+    youtube = build('youtube', 'v3', developerKey=api_key)
+    request = youtube.videos().list(part='snippet', id=video_id)
+    return await hass.async_add_executor_job(request.execute)
+
 class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventListener):
     """Data update coordinator for the YouTube Lounge integration."""
 
@@ -140,6 +145,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         )
 
     async def refresh_auth(self, _now: datetime|None = None) -> None:
+        LOGGER.info(f"Refreshing Auth ({_now})")
         await self.api_client.refresh_auth()
 
         data = {
@@ -157,11 +163,11 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             raise NoSuchMethod
 
         if not self.connected:
-            LOGGER.debug(f"Client not connected when calling {func_name}, trying to connect...")
+            LOGGER.info(f"Client not connected when calling {func_name}, trying to connect...")
             await self.api_client.connect()
 
         if not self.subscribed:
-            LOGGER.debug(f"Subscribtion inactive when calling {func_name}, trying to subscribe...")
+            LOGGER.info(f"Subscribtion inactive when calling {func_name}, trying to subscribe...")
             await self.subscribe(True)
 
         LOGGER.debug(f"Command: {func_name}({kwargs})")
@@ -191,7 +197,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
                     while True:
                         t0 = time()
                         if not self.connected:
-                            LOGGER.debug("Client not connected in subscribe task, trying to connect...")
+                            LOGGER.info("Client not connected in subscribe task, trying to connect...")
                             await self.api_client.connect()
                         await self.api_client.subscribe()
                         t1 = time()
@@ -272,20 +278,15 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
 
     async def _async_update_data(self) -> YtLoungeData:
         """Get the latest data from YTLounge API."""
-        LOGGER.debug(self.live_data)
 
-        def get_video_data(video_id: str, api_key: str) -> dict:
-            youtube = build('youtube', 'v3', developerKey=api_key)
-            request = youtube.videos().list(part='snippet', id=video_id)
-            return request.execute()
-
-        if (vid := self.live_data['video_id']) and vid != self.last_video_id:
-            self.last_video_id = vid
-            video_data = await self.hass.async_add_executor_job(get_video_data, vid, self.config_entry.data[CONF_API_KEY])
-            LOGGER.debug(f"YT API Response: {video_data}")
-            self.live_data['video_title'] = video_data['items'][0]['snippet']['title']
-            self.live_data['channel'] = video_data['items'][0]['snippet']['channelTitle']
-        if not self.live_data['video_id']:
+        if CONF_API_KEY in self.config_entry.data and (vid := self.live_data['video_id']):
+            if vid != self.last_video_id:
+                self.last_video_id = vid
+                video_data = await _async_get_video_data(self.hass, vid, self.config_entry.data[CONF_API_KEY])
+                self.live_data['video_title'] = video_data['items'][0]['snippet']['title']
+                self.live_data['channel'] = video_data['items'][0]['snippet']['channelTitle']
+                LOGGER.debug(f"GetVideoData: Title: {self.live_data['video_title']}, Channel:{self.live_data['channel']}")
+        else:
             self.live_data['video_title'] = None
             self.live_data['channel'] = None
 
@@ -295,7 +296,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
 
         thumbnail_url = None
         if self.live_data['video_id']:
-            get_thumbnail_url(self.live_data['video_id'])
+            thumbnail_url = get_thumbnail_url(self.live_data['video_id'])
 
         return YtLoungeData(
             self.live_data['connected'],

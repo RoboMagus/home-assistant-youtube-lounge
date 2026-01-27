@@ -5,19 +5,16 @@ from __future__ import annotations
 from collections.abc import Mapping
 import logging
 from typing import Any
-
 import voluptuous as vol
 
-from googleapiclient.discovery import build
 from pyytlounge import YtLoungeApi
 
 from homeassistant import exceptions
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
-from homeassistant.core import callback
-from homeassistant.util.uuid import random_uuid_hex
+from homeassistant.core import callback, HomeAssistant
 
 from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_NAME, CONF_SCREEN_ID, CONF_TV_CODE, DOMAIN
-from .coordinator import YTLoungeConfigEntry
+from .coordinator import _async_get_video_data
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,15 +25,8 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     }
 )
 
-def _generate_client_device_id() -> str:
-    """Generate a random UUID4 string to identify ourselves."""
-    return random_uuid_hex()
-
-def _test_api_key(key: str) -> bool:
-    youtube = build('youtube', 'v3', developerKey=key)
-    request = youtube.videos().list(part='snippet', id="jNQXAC9IVRw")
-    details = request.execute()
-
+async def _test_api_key(hass: HomeAssistant, key: str) -> bool:
+    details = await _async_get_video_data(hass, "jNQXAC9IVRw", key)
     LOGGER.debug(f"YT API Response: {details}")
     return True
 
@@ -92,7 +82,7 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
 
             try:
                 if CONF_API_KEY in user_input:
-                    api_key_valid = await self.hass.async_add_executor_job(_test_api_key, user_input[CONF_API_KEY])
+                    api_key_valid = await _test_api_key(self.hass, user_input[CONF_API_KEY])
                     if not api_key_valid:
                         raise InvalidApiKey
 
