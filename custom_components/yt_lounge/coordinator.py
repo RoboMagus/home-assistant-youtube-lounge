@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 from typing import Any, Optional
@@ -19,8 +20,11 @@ from pyytlounge import (
     DisconnectedEvent,
     PlaybackSpeedEvent,
 )
+from pyytlounge.api import get_thumbnail_url
+from pyytlounge.models import State as PlaybackState
 
 from homeassistant import exceptions
+from homeassistant.components.media_player import MediaPlayerState
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant, callback
@@ -35,7 +39,38 @@ LOGGER = logging.getLogger(__name__)
 
 type YTLoungeConfigEntry = ConfigEntry[YTLoungeDataUpdateCoordinator]
 
-class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]], EventListener):
+@dataclass
+class YtLoungeData:
+    """Data from YouTube Lounge API."""
+
+    connected: bool
+    playback_state: PlaybackState
+    mediaplayer_state: MediaPlayerState
+
+    video_id: str | None
+    video_title: str | None
+    thumbnail_url: str | None
+    channel: str | None
+
+    duration: float
+    current_time: float
+    current_time_updated: datetime | None
+
+    volume: float
+    muted: bool
+
+def PlaybackState2MediaPlayerState(state: PlaybackState) -> MediaPlayerState:
+    state_map = {
+        PlaybackState.Stopped: MediaPlayerState.IDLE,
+        PlaybackState.Buffering: MediaPlayerState.BUFFERING,
+        PlaybackState.Playing: MediaPlayerState.PLAYING,
+        PlaybackState.Paused: MediaPlayerState.PAUSED,
+        PlaybackState.Starting: MediaPlayerState.BUFFERING,
+    }
+
+    return state_map.get(state, MediaPlayerState.IDLE)
+
+class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventListener):
     """Data update coordinator for the Jellyfin integration."""
 
     config_entry: YTLoungeConfigEntry
@@ -235,7 +270,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
     #   YTLounge Event listener hooks
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-    async def _async_update_data(self) -> dict[str, dict[str, Any]]:
+    async def _async_update_data(self) -> YtLoungeData:
         """Get the latest data from Jellyfin."""
         LOGGER.debug(self.live_data)
 
@@ -254,8 +289,28 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, An
             self.live_data['video_title'] = None
             self.live_data['channel'] = None
 
-        # ToDo: Fill structure...
-        return {}
+        mediaplayer_state = MediaPlayerState.OFF
+        if self.connected and self.subscribed:
+            mediaplayer_state = PlaybackState2MediaPlayerState(self.live_data['state'])
+
+        thumbnail_url = None
+        if self.live_data['video_id']:
+            get_thumbnail_url(self.live_data['video_id'])
+
+        return YtLoungeData(
+            self.live_data['connected'],
+            self.live_data['state'],
+            mediaplayer_state,
+            self.live_data['video_id'],
+            self.live_data['video_title'],
+            thumbnail_url,
+            self.live_data['channel'],
+            self.live_data['duration'],
+            self.live_data['current_time'],
+            self.live_data['current_time_updated'],
+            self.live_data['volume'],
+            self.live_data['muted']
+        )
 
 class CannotConnect(exceptions.HomeAssistantError):
     """Error to indicate the server is unreachable."""

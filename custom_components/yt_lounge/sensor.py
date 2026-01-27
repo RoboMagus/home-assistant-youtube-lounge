@@ -77,4 +77,4 @@ class YTLoungeSensor(YTLoungeEntity, SensorEntity):
     @property
     def native_value(self) -> StateType:
         """Sensor status direct from live coordinator data."""
-        return cast(StateType, self.coordinator.live_data[self.entity_description.key])
+        return cast(StateType, getattr(self.coordinator.data, self.entity_description.key))

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from time import time
 from typing import Any
 
@@ -21,9 +22,6 @@ from homeassistant.helpers.entity_platform import (
     AddConfigEntryEntitiesCallback,
     async_get_current_platform,
 )
-
-from pyytlounge.api import get_thumbnail_url
-from pyytlounge.models import State as PlaybackState
 
 from .const import DOMAIN, SERVICE_CONNECT, SERVICE_GET_NOW_PLAYING, SERVICE_SUBSCRIBE
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
@@ -114,68 +112,54 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     @property
     def state(self) -> MediaPlayerState | None:
         """State of the player."""
-        state_map = {
-            PlaybackState.Stopped: MediaPlayerState.IDLE,
-            PlaybackState.Buffering: MediaPlayerState.BUFFERING,
-            PlaybackState.Playing: MediaPlayerState.PLAYING,
-            PlaybackState.Paused: MediaPlayerState.PAUSED,
-            PlaybackState.Starting: MediaPlayerState.BUFFERING,
-        }
-
-        if self.coordinator.connected and self.coordinator.subscribed:
-            return state_map.get(self.coordinator.live_data['state'], MediaPlayerState.IDLE)
-        else:
-            return MediaPlayerState.OFF
+        return self.coordinator.data.mediaplayer_state
 
     @property
     def volume_level(self) -> float | None:
         """Volume level of the media player (0..1)."""
-        return self.coordinator.live_data['volume'] / 100.0
+        return self.coordinator.data.volume / 100.0
 
     @property
     def is_volume_muted(self) -> bool | None:
         """Boolean if volume is currently muted."""
-        return self.coordinator.live_data['muted']
+        return self.coordinator.data.muted
 
     @property
     def media_content_id(self) -> str | None:
         """Content ID of current playing media."""
-        return self.coordinator.live_data['video_id']
+        return self.coordinator.data.video_id
 
     @property
     def media_duration(self) -> int | None:
         """Duration of current playing media in seconds."""
-        return self.coordinator.live_data['duration']
+        return self.coordinator.data.duration
 
     @property
     def media_position(self) -> int | None:
         """Position of current playing media in seconds."""
-        return self.coordinator.live_data['current_time']
+        return self.coordinator.data.current_time
 
     @property
-    def media_position_updated_at(self) -> dt.datetime | None:
+    def media_position_updated_at(self) -> datetime | None:
         """When was the position of the current playing media valid.
         Returns value from homeassistant.util.dt.utcnow().
         """
-        return self.coordinator.live_data['current_time_updated']
+        return self.coordinator.data.current_time_updated
 
     @property
     def media_image_url(self) -> str | None:
         """Image url of current playing media."""
-        if self.coordinator.live_data['video_id'] is None:
-            return None
-
-        return get_thumbnail_url(self.coordinator.live_data['video_id'])
+        return self.coordinator.data.thumbnail_url
 
     @property
     def media_title(self) -> str | None:
         """Title of current playing media."""
-        return self.coordinator.live_data['video_title']
+        return self.coordinator.data.video_title
 
     @property
     def media_channel(self) -> str | None:
         """Channel currently playing."""
-        return self.coordinator.live_data['channel']
+        return self.coordinator.data.channel
 
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     #   State Properties
