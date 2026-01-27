@@ -296,7 +296,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
 
         thumbnail_url = None
         if self.live_data['video_id']:
-            thumbnail_url = get_thumbnail_url(self.live_data['video_id'])
+            thumbnail_url = get_thumbnail_url(self.live_data['video_id'], "maxresdefault")
 
         return YtLoungeData(
             self.live_data['connected'],
