@@ -13,8 +13,9 @@ Do not use if you aren't ok with things breaking.
 ## ✨ Features
 
 - Links to YouTube native TV app using _pairing code_.
+  - See [`Link devices with a TV code`](https://support.google.com/youtube/answer/7640706#zippy=%2Clink-devices-with-a-tv-code) for instructions on finding the TV pairing code.
 - Get video info from YouTube API using _API Key_ (Optional).
-  - See [references](#references) for instructions on how to create an API Key.
+  - See [this pinchflat wiki](https://github.com/kieraneglin/pinchflat/wiki/Generating-a-YouTube-API-key) for instructions on how to create an API Key.
 - See what's playing
   - Video Thumbnail
   - Video ID
@@ -77,4 +78,3 @@ Most TVs expose the current app to HomeAssistant without delay. This component e
 ## References:
 
 - https://pyytlounge.readthedocs.io/
-- https://github.com/kieraneglin/pinchflat/wiki/Generating-a-YouTube-API-key
