@@ -162,6 +162,10 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         if not f:
             raise NoSuchMethod
 
+        if not self.linked:
+            LOGGER.info(f"Client not linked when calling {func_name}, trying to refresh auth...")
+            await self.refresh_auth(utcnow())
+
         if not self.connected:
             LOGGER.info(f"Client not connected when calling {func_name}, trying to connect...")
             await self.api_client.connect()
@@ -196,6 +200,9 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
                 async def subscribe_keepalive():
                     while True:
                         t0 = time()
+                        if not self.linked:
+                            LOGGER.info(f"Client not linked in subscribe task, trying to refresh auth...")
+                            await self.refresh_auth(utcnow())
                         if not self.connected:
                             LOGGER.info("Client not connected in subscribe task, trying to connect...")
                             await self.api_client.connect()
@@ -204,7 +211,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
                         LOGGER.info(f"Subscribe Keepalive; refresh after {t1 - t0}")
 
                 self.subscribe_task = asyncio.create_task(subscribe_keepalive(), name="YtLounge-Subscribe")
-                async_call_later(self.hass, timedelta(seconds=3), self.get_now_playing)
+                async_call_later(self.hass, timedelta(seconds=5), self.get_now_playing)
             else:
                 if self.subscribe_task is not None:
                     self.subscribe_task.cancel()
@@ -270,7 +277,9 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         self.live_data['video_id'] = None
         self.live_data['video_title'] = None
         self.live_data['channel'] = None
-        LOGGER.debug(f"Disconnected with Reason: {event.reason}")
+        LOGGER.info(f"Disconnected with Reason: {event.reason}")
+        if self.subscribed:
+            self.subscribe(False)
         await self.async_request_refresh()
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     #   YTLounge Event listener hooks
