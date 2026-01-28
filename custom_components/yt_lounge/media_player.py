@@ -206,10 +206,8 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
             LOGGER.debug(f"Add to queue: {media_id}   >   {res}")
         elif enqueue == MediaPlayerEnqueue.NEXT:
             # play the given media item next, keep queue
-            raise exceptions.HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="play_next_unsupported",
-            )
+            res = await self.coordinator.command('_command', command='insertVideo', command_parameters={"videoId": media_id})
+            LOGGER.debug(f"Add next: {media_id}   >   {res}")
         elif enqueue == MediaPlayerEnqueue.PLAY:
             # play the given media item now, keep queue
             res = await self.coordinator.command('_command', command='setVideo', command_parameters={"videoId": media_id})
