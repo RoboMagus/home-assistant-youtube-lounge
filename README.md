@@ -39,6 +39,41 @@ Do not use if you aren't ok with things breaking.
 | `sensor`        | Currently playing video info (id, title, channel) (Requires API key)           |
 | `switch`        | Activate / deactivate subscription required for instant playback state updates |
 
+### Switch
+
+As long as this component is subscribed to the events emitted by the TVs YouTube app, all state updates are immediate. However if the TV is turned off or the YouTube app is inactive we cannot rely on pushed state changes and would instead rely on polling. This would cause both a delay on the state change from inactive to active and might quickly run into API rate limits.
+
+Most TVs expose the current app to HomeAssistant without delay. This component exposes a _switch_ that is intended to be used in an automation to automatically enable the event subscriptions when the YouTube app is activated on the TV. An example automation is shown below:
+
+```yaml
+- id: toggle_yt_lounge_tv_on_tv_app
+  alias: Toggle YouTube Lounge on TV app
+  mode: single
+  max_exceeded: silent
+  trigger:
+    - trigger: state
+      entity_id: media_player.lg_tv
+      attribute: source
+      to:
+        - "YouTube"
+        - "YouTube AdFree"
+    - trigger: state
+      entity_id: media_player.lg_tv
+      attribute: source
+      from:
+        - "YouTube"
+        - "YouTube AdFree"
+      for:
+        minutes: 10
+  action:
+    - variables:
+        service: "switch.{{ 'turn_on' if ('YouTube' in state_attr('media_player.lg_tv', 'source')|default(' ',True)) else 'turn_off' }}"
+    - action: "{{ service }}"
+      target:
+        # YouTube Lounge 'switch' entity
+        entity_id: switch.youtube_tv_subscribed
+```
+
 ## References:
 
 - https://pyytlounge.readthedocs.io/
