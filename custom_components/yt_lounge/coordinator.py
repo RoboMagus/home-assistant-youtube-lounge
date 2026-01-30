@@ -29,7 +29,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
-from homeassistant.helpers.event import async_call_later, async_track_time_interval
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import utcnow
 
@@ -101,6 +101,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         self.screen_name = config_entry.data[CONF_SCREEN_NAME]
         self.device_name = config_entry.data[CONF_DEVICE_NAME]
 
+        self.cancel_auth_refresh = None
         self.subscribe_task = None
         self.last_video_id = None
         self.live_data = {
@@ -130,19 +131,29 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         @callback
         def _async_stop(_: Event) -> None:
             self.api_client.session.detach()
-            if self.subscribe_task is not None:
+            if self.subscribe_task:
                 self.subscribe_task.cancel()
                 self.subscribe_task = None
+            if self.cancel_auth_refresh:
+                self.cancel_auth_refresh()
+                self.cancel_auth_refresh = None
 
         # Make sure task is cancelled on shutdown (or tests complete)
         self.config_entry.async_on_unload(
             self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_stop)
         )
 
-        # Refresh auth every 72 hours; safe margin within 13 day limit
-        async_track_time_interval(
-            self.hass, self.refresh_auth, timedelta(hours=72), cancel_on_shutdown=True
+        self.schedule_auth_refresh()
+
+    def schedule_auth_refresh(self) -> None:
+        if self.cancel_auth_refresh:
+            self.cancel_auth_refresh()
+
+        # Refresh auth at least every 150 hours; safe margin within 13 day limit
+        self.cancel_auth_refresh = async_call_later(
+            self.hass, timedelta(hours=150), self.refresh_auth
         )
+        LOGGER.debug(f"schedule_auth_refresh(next={datetime.now()+timedelta(hours=150)})")
 
     async def refresh_auth(self, _now: datetime|None = None) -> None:
         LOGGER.info(f"Refreshing Auth ({_now})")
@@ -153,6 +164,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             CONF_AUTH_STATE: self.api_client.auth.serialize(),
         }
         self.hass.config_entries.async_update_entry(self.config_entry, data=data)
+        self.schedule_auth_refresh()
 
     async def get_now_playing(self, now: datetime | None = None) -> None:
         await self.api_client.get_now_playing()
