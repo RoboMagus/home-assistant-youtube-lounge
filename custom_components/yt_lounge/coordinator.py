@@ -289,7 +289,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         """Get the latest data from YTLounge API."""
 
         if CONF_API_KEY in self.config_entry.data and (vid := self.live_data['video_id']):
-            if vid != self.last_video_id:
+            if vid != self.last_video_id or self.data.video_title is None:
                 self.last_video_id = vid
                 video_data = await _async_get_video_data(self.hass, vid, self.config_entry.data[CONF_API_KEY])
                 self.live_data['video_title'] = video_data['items'][0]['snippet']['title']
