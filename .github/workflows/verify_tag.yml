@@ -1,0 +1,40 @@
+name: Verify Tag Version
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  verify:
+    name: Verify tag version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Write tag version to manifest
+        run: |
+          jq -j '.version = "${{ github.ref_name }}"' custom_components/yt_lounge/manifest.json > manifest.tmp && mv manifest.tmp custom_components/yt_lounge/manifest.json
+          if [[ $(git diff custom_components/yt_lounge/manifest.json) ]]; then
+              echo "Version fix required!"
+
+              # Create branch from tag
+              git checkout ${{ github.ref_name }} -b ${{ github.ref_name }}-branch
+
+              # Commit the fix
+              git -c user.name="Tag Version Fixer" -c user.email="${{ github.actor }}@users.noreply.github.com" \
+                commit -a -m "Fix manifest version"
+
+              echo "Re-Creating Tag..."
+              git -c user.name="Tag Version Fixer" -c user.email="${{ github.actor }}@users.noreply.github.com" \
+                tag -fa ${{ github.ref_name }} -m "Fix manifest version"
+
+              echo "Pushing Changes..."
+              git push origin -f ${{ github.ref_name }}
+
+              echo "Done!"
+          else
+              echo -e "Tag matches manifest version.\nGood job @${{ github.actor }}!"
+          fi
