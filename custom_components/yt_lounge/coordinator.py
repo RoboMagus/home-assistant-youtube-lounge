@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import json
 import logging
 from typing import Any, Optional
 from time import time
@@ -101,6 +102,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         self.screen_name = config_entry.data[CONF_SCREEN_NAME]
         self.device_name = config_entry.data[CONF_DEVICE_NAME]
 
+        self.auto_disconnect = False
         self.cancel_auth_refresh = None
         self.subscribe_task = None
         self.last_video_id = None
@@ -118,6 +120,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             'playback_speed': None,
             'connected': False,
         }
+        self.connected_devices = []
 
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
@@ -189,6 +192,9 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         LOGGER.debug(f"Command: {func_name}({kwargs})")
         return await f(**kwargs)
 
+    async def set_auto_disconnect(self, enable: bool):
+        self.auto_disconnect = enable
+
     @property
     def paired(self) -> bool:
         return self.api_client.paired()
@@ -230,6 +236,12 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
                     self.subscribe_task = None
 
         await self.async_request_refresh()
+
+    async def handle_connected_device_changed(self, devices):
+        if self.auto_disconnect and len(devices) < 3 and len(self.connected_devices) >= 3:
+            LOGGER.info("Auto disconnect!")
+            await self.subscribe(False)
+            await self.api_client.disconnect()
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
@@ -293,6 +305,18 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         if self.subscribed:
             self.subscribe(False)
         await self.async_request_refresh()
+
+    async def lounge_status_changed_raw(self, event: Any) -> None:
+        """Called when launge status changes"""
+        devices = json.loads(event["devices"])
+        await self.handle_connected_device_changed(devices)
+        self.connected_devices = devices
+
+        LOGGER.debug(f"Lounge status changed event: {json.dumps(devices, sort_keys=True, indent=4, default=lambda o: '<< Not JSON Serializable... >>')}")
+
+    async def unknown_event_raw(self, event_type: str, event: Any) -> None:
+        """Called when an unprocess event is received"""
+        LOGGER.debug(f"Unknown event({event_type}): {json.dumps(event, sort_keys=True, indent=4, default=lambda o: '<< Not JSON Serializable... >>')}")
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     #   YTLounge Event listener hooks
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

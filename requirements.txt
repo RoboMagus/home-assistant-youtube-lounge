@@ -2,4 +2,4 @@
 # These are installed by Home Assistant when the integration is loaded
 # See custom_components/yt_lounge/manifest.json for the authoritative list
 
-pyytlounge ~= 3.2
+pyytlounge @ git+https://github.com/RoboMagus/pyytlounge@master

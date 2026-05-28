@@ -11,8 +11,11 @@ from homeassistant.components.switch import (
     SwitchEntity,
     SwitchEntityDescription
 )
+
+from homeassistant.const import STATE_ON, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
 from .entity import YTLoungeEntity
@@ -31,6 +34,13 @@ YTLOUNGE_SWITCHES: tuple[YtLoungeSwitchEntityDescription, ...] = (
         icon_fn=lambda is_on: "mdi:bell-ring" if is_on else "mdi:bell-off",
         set_fn=lambda coordinator, on: coordinator.subscribe(on),
     ),
+    YtLoungeSwitchEntityDescription(
+        key="auto_disconnect",
+        name="auto disconnect",
+        entity_category=EntityCategory.CONFIG,
+        icon_fn=lambda is_on: "mdi:lan-disconnect",
+        set_fn=lambda coordinator, on: coordinator.set_auto_disconnect(on),
+    ),
 )
 
 async def async_setup_entry(
@@ -45,7 +55,7 @@ async def async_setup_entry(
         for description in YTLOUNGE_SWITCHES
     )
 
-class YTLoungeSwitch(YTLoungeEntity, SwitchEntity):
+class YTLoungeSwitch(YTLoungeEntity, SwitchEntity, RestoreEntity):
     """YTLounge binary sensor."""
 
     def __init__(
@@ -58,6 +68,14 @@ class YTLoungeSwitch(YTLoungeEntity, SwitchEntity):
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.screen_id}_{description.key}_switch"
         self._attr_name = f"{self.device_name} {description.name}"
+
+    async def async_added_to_hass(self) -> None:
+        """Restore last state."""
+        await super().async_added_to_hass()
+        if not (last_state := await self.async_get_last_state()):
+            return
+
+        await self.entity_description.set_fn(self.coordinator, last_state.state == STATE_ON)
 
     @property
     def is_on(self) -> bool:

@@ -17,7 +17,7 @@
     "pyytlounge"
   ],
   "requirements": [
-    "pyytlounge~=3.2"
+    "pyytlounge @ git+https://github.com/RoboMagus/pyytlounge@master"
   ],
-  "version": "0.0.2"
+  "version": "0.0.3"
 }
