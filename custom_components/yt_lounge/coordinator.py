@@ -211,6 +211,10 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
     def subscribed(self) -> bool:
         return self.subscribe_task is not None
 
+    @property
+    def autoplay(self) -> bool:
+        return self.live_data['autoplay']
+
     async def subscribe(self, enable: bool):
         if enable != self.subscribed:
             LOGGER.info(f"Subscribe({enable})")
@@ -232,6 +236,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
                 async_call_later(self.hass, timedelta(seconds=5), self.get_now_playing)
             else:
                 if self.subscribe_task is not None:
+                    await self.api_client.disconnect()
                     self.subscribe_task.cancel()
                     self.subscribe_task = None
 

@@ -29,6 +29,12 @@ class YtLoungeSwitchEntityDescription(SwitchEntityDescription):
 
 YTLOUNGE_SWITCHES: tuple[YtLoungeSwitchEntityDescription, ...] = (
     YtLoungeSwitchEntityDescription(
+        key="autoplay",
+        name="autoplay",
+        icon_fn=lambda is_on: "mdi:animation-play",
+        set_fn=lambda coordinator, enabled: coordinator.command('set_auto_play_mode', enabled=enabled),
+    ),
+    YtLoungeSwitchEntityDescription(
         key="subscribed",
         name="subscribed",
         icon_fn=lambda is_on: "mdi:bell-ring" if is_on else "mdi:bell-off",

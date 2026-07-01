@@ -26,6 +26,7 @@ Do not use if you aren't ok with things breaking.
   - Volume controls
   - Previous / Next
   - Seek to timestamp
+  - Toggle autoplay
 - Play video by `video_id`
   - Play now
   - Add to queue
