@@ -20,6 +20,7 @@ from pyytlounge import (
     AutoplayModeChangedEvent,
     DisconnectedEvent,
     PlaybackSpeedEvent,
+    SubtitlesTrackEvent,
 )
 from pyytlounge.api import get_thumbnail_url
 from pyytlounge.models import State as PlaybackState
@@ -53,6 +54,9 @@ class YtLoungeData:
     thumbnail_url: str | None
     channel: str | None
 
+    subtitle_track: str | None
+    subtitle_options: list[str]
+
     duration: float
     current_time: float
     current_time_updated: datetime | None
@@ -75,6 +79,12 @@ async def _async_get_video_data(hass: HomeAssistant, video_id: str, api_key: str
     youtube = build('youtube', 'v3', developerKey=api_key)
     request = youtube.videos().list(part='snippet', id=video_id)
     return await hass.async_add_executor_job(request.execute)
+
+async def _async_get_video_subtitles(hass: HomeAssistant, video_id: str, api_key: str) -> list:
+    youtube = build('youtube', 'v3', developerKey=api_key)
+    request = youtube.captions().list(part='snippet', videoId=video_id)
+    res = await hass.async_add_executor_job(request.execute)
+    return list(set([sub['snippet']['language'] for sub in res['items']]))
 
 class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventListener):
     """Data update coordinator for the YouTube Lounge integration."""
@@ -111,6 +121,8 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             'video_id': None,
             'video_title': None,
             'channel': None,
+            'subtitle_track': None,
+            'subtitle_options': [],
             'current_time': None,
             'current_time_updated': None,
             'duration': None,
@@ -304,12 +316,20 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         LOGGER.debug(f"Playback speed changed: {event.playback_speed}")
         await self.async_request_refresh()
 
+    async def subtitles_track_changed(self, event: SubtitlesTrackEvent) -> None:
+        """Called when subtitles track changes"""
+        self.live_data['subtitle_track'] = event.language_code or "disabled"
+        LOGGER.debug(f"Subtitles track changed: {event.__dict__}")
+        await self.async_request_refresh()
+
     async def disconnected(self, event: DisconnectedEvent) -> None:
         """Called when the screen is no longer connected"""
         self.live_data['connected'] = False
         self.live_data['video_id'] = None
         self.live_data['video_title'] = None
         self.live_data['channel'] = None
+        self.live_data['subtitle_track'] = None
+        self.live_data['subtitle_options'] = []
         LOGGER.info(f"Disconnected with Reason: {event.reason}")
         if self.subscribed:
             self.subscribe(False)
@@ -341,7 +361,9 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
                 video_data = await _async_get_video_data(self.hass, vid, self.config_entry.data[CONF_API_KEY])
                 self.live_data['video_title'] = video_data['items'][0]['snippet']['title']
                 self.live_data['channel'] = video_data['items'][0]['snippet']['channelTitle']
-                LOGGER.debug(f"GetVideoData: Title: {self.live_data['video_title']}, Channel:{self.live_data['channel']}")
+                self.live_data['subtitle_options'] = await _async_get_video_subtitles(self.hass, vid, self.config_entry.data[CONF_API_KEY])
+                LOGGER.info(f"GetVideoData: Title: {self.live_data['video_title']}, Channel:{self.live_data['channel']}")
+                LOGGER.debug(f"Subtitles: {self.live_data['subtitle_options']}")
         else:
             self.live_data['video_title'] = None
             self.live_data['channel'] = None
@@ -362,6 +384,8 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             self.live_data['video_title'],
             thumbnail_url,
             self.live_data['channel'],
+            self.live_data['subtitle_track'],
+            self.live_data['subtitle_options'],
             self.live_data['duration'],
             self.live_data['current_time'],
             self.live_data['current_time_updated'],

@@ -62,7 +62,7 @@ async def async_setup_entry(
     )
 
 class YTLoungeSwitch(YTLoungeEntity, SwitchEntity, RestoreEntity):
-    """YTLounge binary sensor."""
+    """YTLounge switch entity."""
 
     def __init__(
         self,

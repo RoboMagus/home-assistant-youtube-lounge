@@ -18,4 +18,4 @@ SERVICE_GET_NOW_PLAYING = "get_now_playing"
 SERVICE_RAW_COMMAND = "raw_command"
 SERVICE_SUBSCRIBE = "subscribe"
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.SENSOR, Platform.SELECT, Platform.SWITCH]
