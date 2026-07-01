@@ -194,6 +194,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
 
     async def set_auto_disconnect(self, enable: bool):
         self.auto_disconnect = enable
+        await self.async_request_refresh()
 
     @property
     def paired(self) -> bool:
@@ -243,10 +244,13 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         await self.async_request_refresh()
 
     async def handle_connected_device_changed(self, devices):
-        if self.auto_disconnect and len(devices) < 3 and len(self.connected_devices) >= 3:
-            LOGGER.info("Auto disconnect!")
-            await self.subscribe(False)
-            await self.api_client.disconnect()
+        if self.auto_disconnect and len(devices) == 0 and len(self.connected_devices) > 0:
+            try:
+                LOGGER.info("Auto disconnect!")
+                await self.subscribe(False)
+                await self.api_client.disconnect()
+            except Exception:
+                pass
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
@@ -314,10 +318,12 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
     async def lounge_status_changed_raw(self, event: Any) -> None:
         """Called when launge status changes"""
         devices = json.loads(event["devices"])
+        # Remove TV and Self instance:
+        devices = [d for d in devices if d["type"] == "REMOTE_CONTROL" and d["name"] != "HomeAssistant"]
+        LOGGER.debug(f"Lounge status changed event: {json.dumps(devices, sort_keys=True, indent=4, default=lambda o: '<< Not JSON Serializable... >>')}")
         await self.handle_connected_device_changed(devices)
         self.connected_devices = devices
 
-        LOGGER.debug(f"Lounge status changed event: {json.dumps(devices, sort_keys=True, indent=4, default=lambda o: '<< Not JSON Serializable... >>')}")
 
     async def unknown_event_raw(self, event_type: str, event: Any) -> None:
         """Called when an unprocess event is received"""
