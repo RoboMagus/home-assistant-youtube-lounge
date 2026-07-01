@@ -60,6 +60,24 @@
         }
       },
       "name": "Subscribe"
+    },
+    "raw_command": {
+      "description": "Send raw YouTube Lounge API command.",
+      "fields": {
+        "entity_id": {
+          "description": "YTLounge entity to connect.",
+          "name": "Entity"
+        },
+        "command": {
+          "description": "Command name",
+          "name": "Command"
+        },
+        "args": {
+          "description": "Command arguments",
+          "name": "Arguments"
+        }
+      },
+      "name": "Raw Command"
     }
   }
 }

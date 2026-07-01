@@ -7,6 +7,8 @@ from datetime import datetime
 from time import time
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant import exceptions
 from homeassistant.components.media_player import (
     ATTR_MEDIA_ENQUEUE,
@@ -18,16 +20,24 @@ from homeassistant.components.media_player import (
 )
 from homeassistant.core import HomeAssistant, callback, ServiceResponse, SupportsResponse
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.config_validation import make_entity_service_schema
 from homeassistant.helpers.entity_platform import (
     AddConfigEntryEntitiesCallback,
     async_get_current_platform,
 )
 
-from .const import DOMAIN, SERVICE_CONNECT, SERVICE_GET_NOW_PLAYING, SERVICE_SUBSCRIBE
+from .const import DOMAIN, SERVICE_CONNECT, SERVICE_GET_NOW_PLAYING, SERVICE_RAW_COMMAND, SERVICE_SUBSCRIBE
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
 from .entity import YTLoungeEntity
 
 LOGGER = logging.getLogger(__name__)
+
+RAW_COMMAND_SERVICE_SCHEMA = make_entity_service_schema(
+    {
+        vol.Required("command"): cv.string,
+        vol.Optional("args"): dict,
+    }
+)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -55,6 +65,12 @@ async def async_setup_entry(
         name=SERVICE_SUBSCRIBE,
         schema=None,
         func="async_subscribe",
+        supports_response=SupportsResponse.OPTIONAL
+    )
+    platform.async_register_entity_service(
+        name=SERVICE_RAW_COMMAND,
+        schema=RAW_COMMAND_SERVICE_SCHEMA,
+        func="async_raw_command",
         supports_response=SupportsResponse.OPTIONAL
     )
 
@@ -105,6 +121,13 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
         return {
             "time_elapsed": t1-t0,
         }
+
+    async def async_raw_command(self, command: str, args: Any) -> ServiceResponse:
+        """Connect Service-Call."""
+        LOGGER.info(f"async_raw_command({command}, {args})")
+        res = await self.coordinator.command('_command', command=command, command_parameters=args)
+        LOGGER.info(f"Command Response: {res}")
+        return res
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   State Properties

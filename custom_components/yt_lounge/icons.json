@@ -1,13 +1,16 @@
 {
-    "services": {
-        "connect": {
-            "service": "mdi:connection"
-        },
-        "get_now_playing": {
-            "service": "mdi:movie-search"
-        },
-        "subscribe": {
-            "service": "mdi:connection"
-        }
+  "services": {
+    "connect": {
+      "service": "mdi:connection"
+    },
+    "get_now_playing": {
+      "service": "mdi:movie-search"
+    },
+    "raw_command": {
+      "service": "mdi:bash"
+    },
+    "subscribe": {
+      "service": "mdi:connection"
     }
+  }
 }

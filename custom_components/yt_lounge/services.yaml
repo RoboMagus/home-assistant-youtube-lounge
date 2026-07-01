@@ -24,3 +24,20 @@ subscribe:
         entity:
           integration: yt_lounge
           domain: media_player
+
+raw_command:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          integration: yt_lounge
+          domain: media_player
+    command:
+      required: true
+      selector:
+        text:
+    args:
+      required: false
+      selector:
+        object:
