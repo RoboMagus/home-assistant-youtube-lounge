@@ -24,13 +24,19 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Optional(CONF_API_KEY): str,
     }
 )
+STEP_RECONFIG_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_TV_CODE, default="Unchanged"): str,
+        vol.Optional(CONF_API_KEY): str,
+    }
+)
 
 async def _test_api_key(hass: HomeAssistant, key: str) -> bool:
     details = await _async_get_video_data(hass, "jNQXAC9IVRw", key)
     LOGGER.debug(f"YT API Response: {details}")
     return True
 
-async def _test_tv_key(pairing_code: str) -> Dict[str, Any]:
+async def _test_tv_key(pairing_code: str) -> dict[str, Any]:
     async with YtLoungeApi("HA ConfigFlow", None, logging.getLogger(f"{__package__}.pyytlounge")) as client:
         LOGGER.debug(f"Pairing with code {pairing_code}...")
         paired = await client.pair(pairing_code)
@@ -71,6 +77,32 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the YouTube Lounge config flow."""
 
+    async def validate_input(self, user_input: dict[str, Any]):
+        """Validate input from user input."""
+        tv_pair_results: dict[str, Any] = {}
+        errors: dict[str, str] = {}
+        LOGGER.debug(f"User Input: {user_input}")
+
+        try:
+            if CONF_API_KEY in user_input:
+                api_key_valid = await _test_api_key(self.hass, user_input[CONF_API_KEY])
+                if not api_key_valid:
+                    raise InvalidApiKey
+
+            if user_input.get(CONF_TV_CODE) != "Unchanged":
+                tv_pair_results = await _test_tv_key(user_input[CONF_TV_CODE])
+        except CannotConnect:
+            errors["base"] = "cannot_connect"
+        except InvalidAuth:
+            errors["base"] = "invalid_auth"
+        except InvalidApiKey:
+            errors["base"] = "invalid_api_key"
+        except Exception:
+            errors["base"] = "unknown"
+            LOGGER.exception("Unexpected exception")
+
+        return (tv_pair_results, errors)
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -78,27 +110,8 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            LOGGER.debug(f"User Input: {user_input}")
-
-            try:
-                if CONF_API_KEY in user_input:
-                    api_key_valid = await _test_api_key(self.hass, user_input[CONF_API_KEY])
-                    if not api_key_valid:
-                        raise InvalidApiKey
-
-                tv_pair_results = await _test_tv_key(user_input[CONF_TV_CODE])
-
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
-            except InvalidApiKey:
-                errors["base"] = "invalid_api_key"
-            except Exception:
-                errors["base"] = "unknown"
-                LOGGER.exception("Unexpected exception")
-            else:
-
+            tv_pair_results, errors = await self.validate_input(user_input)
+            if not errors:
                 await self.async_set_unique_id(tv_pair_results['auth_state']['screenId'])
                 self._abort_if_unique_id_configured()
 
@@ -115,9 +128,7 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=self.add_suggested_values_to_schema(
-                STEP_USER_DATA_SCHEMA, user_input
-            ),
+            data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
         )
 
@@ -131,37 +142,56 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Dialog that informs the user that reauth is required."""
+        reauth_entry = self._get_reauth_entry()
         errors: dict[str, str] = {}
 
         if not user_input:
             return self.async_show_form(
-                step_id="reauth_confirm", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
+                step_id="reauth_confirm",
+                data_schema=self.add_suggested_values_to_schema(
+                    STEP_RECONFIG_DATA_SCHEMA, reauth_entry.data
+                ),
+                errors=errors
             )
 
-        try:
-            if CONF_API_KEY in user_input:
-                api_key_valid = await self.hass.async_add_executor_job(_test_api_key, user_input[CONF_API_KEY])
-                if not api_key_valid:
-                    raise InvalidApiKey
-            tv_pair_results = await _test_tv_key(user_input[CONF_TV_CODE])
-        except CannotConnect:
-            errors["base"] = "cannot_connect"
-        except InvalidAuth:
-            errors["base"] = "invalid_auth"
-        except InvalidApiKey:
-            errors["base"] = "invalid_api_key"
-        except Exception:
-            errors["base"] = "unknown"
-            LOGGER.exception("Unexpected exception")
-        else:
-            data={
-                CONF_AUTH_STATE: tv_pair_results['auth_state'],
-            }
-            if CONF_API_KEY in user_input:
-                data[CONF_API_KEY] = user_input[CONF_API_KEY]
+        tv_pair_results, errors = await self.validate_input(user_input)
+        if not errors:
+            data = {}
+            if auth_state := tv_pair_results.get("auth_state"):
+                data[CONF_AUTH_STATE] = auth_state
+            if api_key := user_input.get(CONF_API_KEY):
+                data[CONF_API_KEY] = api_key
 
             return self.async_update_reload_and_abort(
                 self._get_reauth_entry(), data_updates=data
+            )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add reconfigure step to allow to manually reconfigure a config entry."""
+        reconfigure_entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+
+        if not user_input:
+            return self.async_show_form(
+                step_id="reconfigure",
+                data_schema=self.add_suggested_values_to_schema(
+                    STEP_RECONFIG_DATA_SCHEMA, reconfigure_entry.data
+                ),
+                errors=errors
+            )
+
+        tv_pair_results, errors = await self.validate_input(user_input)
+        if not errors:
+            data = {}
+            if auth_state := tv_pair_results.get("auth_state"):
+                data[CONF_AUTH_STATE] = auth_state
+            if api_key := user_input.get(CONF_API_KEY):
+                data[CONF_API_KEY] = api_key
+
+            return self.async_update_reload_and_abort(
+                self._get_reconfigure_entry(), data_updates=data
             )
 
 class CannotConnect(exceptions.HomeAssistantError):

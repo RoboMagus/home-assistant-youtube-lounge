@@ -2,7 +2,8 @@
   "config": {
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_account%]",
-      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
@@ -13,15 +14,39 @@
     "step": {
       "reauth_confirm": {
         "data": {
+          "api_key": "[%key:common::config_flow::data::api_key%]",
           "tv_code": "[%key:common::config_flow::data::tv_code%]"
+        },
+        "data_description": {
+          "api_key": "API key (optional)",
+          "tv_code": "Link with TV code (4x3 digits)."
         },
         "description": "YouTube Lounge needs to re-authenticate",
         "title": "[%key:common::config_flow::title::reauth%]"
       },
+      "reconfigure": {
+        "data": {
+          "api_key": "[%key:common::config_flow::data::api_key%]",
+          "tv_code": "[%key:common::config_flow::data::tv_code%]"
+        },
+        "data_description": {
+          "api_key": "API key (optional)",
+          "tv_code": "Link with TV code (4x3 digits)."
+        },
+        "description": "Reconfigure YouTube Lounge",
+        "title": "[%key:common::config_flow::title::reauth%]"
+      },
       "user": {
         "data": {
+          "api_key": "[%key:common::config_flow::data::api_key%]",
           "tv_code": "[%key:common::config_flow::data::tv_code%]"
-        }
+        },
+        "data_description": {
+          "api_key": "API key (optional)",
+          "tv_code": "Link with TV code (4x3 digits)."
+        },
+        "description": "TV can be found in the YouTube TV app under Settings > Link with TV Code.",
+        "title": "[%key:common::config_flow::title::user%]"
       }
     }
   },
