@@ -49,7 +49,7 @@ async def async_setup_entry(
         for description in YTLOUNGE_BASE_SENSORS
     )
 
-    if CONF_API_KEY in entry.data:
+    if entry.data.get(CONF_API_KEY):
         async_add_entities(
             YTLoungeSensor(entry.runtime_data, description)
             for description in YTLOUNGE_API_SENSORS

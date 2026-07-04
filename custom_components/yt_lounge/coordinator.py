@@ -376,13 +376,13 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
     async def _async_update_data(self) -> YtLoungeData:
         """Get the latest data from YTLounge API."""
 
-        if CONF_API_KEY in self.config_entry.data and (vid := self.live_data['video_id']):
+        if (api_key := self.config_entry.data.get(CONF_API_KEY)) and (vid := self.live_data['video_id']):
             if vid != self.last_video_id or self.data.video_title is None:
                 self.last_video_id = vid
-                video_data = await _async_get_video_data(self.hass, vid, self.config_entry.data[CONF_API_KEY])
+                video_data = await _async_get_video_data(self.hass, vid, api_key)
                 self.live_data['video_title'] = video_data['items'][0]['snippet']['title']
                 self.live_data['channel'] = video_data['items'][0]['snippet']['channelTitle']
-                self.live_data['subtitle_options'] = await _async_get_video_subtitles(self.hass, vid, self.config_entry.data[CONF_API_KEY])
+                self.live_data['subtitle_options'] = await _async_get_video_subtitles(self.hass, vid, api_key)
                 LOGGER.info(f"GetVideoData: Title: {self.live_data['video_title']}, Channel:{self.live_data['channel']}")
                 LOGGER.debug(f"Subtitles: {self.live_data['subtitle_options']}")
         else:

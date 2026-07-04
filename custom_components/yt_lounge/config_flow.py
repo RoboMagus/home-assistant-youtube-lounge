@@ -50,7 +50,7 @@ async def _test_tv_key(pairing_code: str) -> Dict[str, Any]:
         auth_state = client.auth.serialize()
         screen_id = client.auth.screen_id
         screen_name = client.screen_name
-        device_name = client.screen_device_name
+        device_name = client.screen_device_name or "Youtube-TV"
         LOGGER.debug(f"AuthState: {auth_state}")
         LOGGER.debug(f"ScreenName: {screen_id}")
         LOGGER.debug(f"ScreenName: {screen_name}")
@@ -105,7 +105,7 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=tv_pair_results['screen_name'],
                     data={
-                        CONF_API_KEY: user_input[CONF_API_KEY],
+                        CONF_API_KEY: user_input.get(CONF_API_KEY),
                         CONF_AUTH_STATE: tv_pair_results['auth_state'],
                         CONF_DEVICE_NAME: tv_pair_results['device_name'],
                         CONF_SCREEN_NAME: tv_pair_results['screen_name'],

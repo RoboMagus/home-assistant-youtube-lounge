@@ -16,6 +16,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .const import CONF_API_KEY
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator, YtLoungeData
 from .entity import YTLoungeEntity
 
@@ -43,10 +44,11 @@ async def async_setup_entry(
 ) -> None:
     """Platform setup using common elements."""
 
-    async_add_entities(
-        YTLoungeSelect(entry.runtime_data, description)
-        for description in YTLOUNGE_SELECTS
-    )
+    if entry.data.get(CONF_API_KEY):
+        async_add_entities(
+            YTLoungeSelect(entry.runtime_data, description)
+            for description in YTLOUNGE_SELECTS
+        )
 
 class YTLoungeSelect(YTLoungeEntity, SelectEntity):
     """YTLounge select entity."""

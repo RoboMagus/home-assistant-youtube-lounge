@@ -37,6 +37,7 @@ YTLOUNGE_SWITCHES: tuple[YtLoungeSwitchEntityDescription, ...] = (
     YtLoungeSwitchEntityDescription(
         key="subscribed",
         name="subscribed",
+        entity_category=EntityCategory.CONFIG,
         icon_fn=lambda is_on: "mdi:bell-ring" if is_on else "mdi:bell-off",
         set_fn=lambda coordinator, on: coordinator.subscribe(on),
     ),

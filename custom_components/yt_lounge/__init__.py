@@ -17,12 +17,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: YTLoungeConfigEntry) -> 
     await coordinator.async_initialize()
     await coordinator.async_config_entry_first_refresh()
 
+    device_name_parts = coordinator.device_name.split(" ")
     device_registry = dr.async_get(hass)
     device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, coordinator.screen_id)},
-        manufacturer=coordinator.device_name.split(" ")[0],
-        model=coordinator.device_name.split(" ")[1],
+        manufacturer=device_name_parts[0],
+        model=device_name_parts[1] if len(device_name_parts) > 1 else None,
         name=coordinator.screen_name,
     )
 
