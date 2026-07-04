@@ -17,7 +17,10 @@ from pyytlounge import (
     PlaybackStateEvent,
     NowPlayingEvent,
     VolumeChangedEvent,
+    AdStateEvent,
+    AdPlayingEvent,
     AutoplayModeChangedEvent,
+    AutoplayUpNextEvent,
     DisconnectedEvent,
     PlaybackSpeedEvent,
     SubtitlesTrackEvent,
@@ -308,6 +311,24 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             f"Auto play changed: {event.enabled} {'(not supported)' if not event.supported else ''}"
         )
         await self.async_request_refresh()
+
+    async def autoplay_up_next_changed(self, event: AutoplayUpNextEvent) -> None:
+        """Called when up next video changes"""
+        LOGGER.debug(
+            f"Autoplay up next changed: {event.__dict__}"
+        )
+
+    async def ad_state_changed(self, event: AdStateEvent) -> None:
+        """Called when ad state changes (position, play/pause, skippable)"""
+        LOGGER.debug(
+            f"Ad state changed: {event.__dict__}"
+        )
+
+    async def ad_playing_changed(self, event: AdPlayingEvent) -> None:
+        """Called when ad starts playing"""
+        LOGGER.debug(
+            f"Ad playing changed: {event.__dict__}"
+        )
 
     async def playback_speed_changed(self, event: PlaybackSpeedEvent) -> None:
         """Called when playback speed changes"""
