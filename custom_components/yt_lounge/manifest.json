@@ -1,14 +1,23 @@
 {
   "domain": "yt_lounge",
   "name": "YouTube Lounge",
-  "after_dependencies": ["http", "media_source"],
-  "codeowners": ["@RoboMagus"],
+  "after_dependencies": [
+    "http",
+    "media_source"
+  ],
+  "codeowners": [
+    "@RoboMagus"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/RoboMagus/home-assistant-youtube-lounge",
   "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/RoboMagus/home-assistant-youtube-lounge/issues",
-  "loggers": ["pyytlounge"],
-  "requirements": ["pyytlounge @ git+https://github.com/RoboMagus/pyytlounge@master"],
+  "loggers": [
+    "pyytlounge"
+  ],
+  "requirements": [
+    "pyytlounge @ git+https://github.com/RoboMagus/pyytlounge@master"
+  ],
   "version": "0.1.0"
 }
