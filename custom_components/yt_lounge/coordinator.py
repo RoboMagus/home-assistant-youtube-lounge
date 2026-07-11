@@ -37,7 +37,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.util.dt import utcnow
+from homeassistant.util.dt import parse_duration, utcnow
 
 from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_ID, CONF_SCREEN_NAME, DOMAIN
 
@@ -267,9 +267,12 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
                 pass
 
     async def get_video_data(self, video_id: str) -> dict:
-        request = self.yt_api.videos().list(part='snippet', id=video_id)
+        request = self.yt_api.videos().list(part='snippet,contentDetails', id=video_id)
         res = await self.hass.async_add_executor_job(request.execute)
-        return res['items'][0]['snippet']
+        data = res['items'][0]['snippet']
+        # Add duration in seconds to video details:
+        data['duration'] = parse_duration(res['items'][0]['contentDetails']['duration']).seconds
+        return data
 
     async def get_video_subtitles(self, video_id: str) -> list:
         request = self.yt_api.captions().list(part='snippet', videoId=video_id)
@@ -283,6 +286,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             if self.yt_api:
                 data = await self.get_video_data(id)
                 info["title"] = data.get("title")
+                info["duration"] = data.get("duration")
                 info["thumbnail"] = data.get("thumbnails", {}).get("maxres", {}).get("url")
             return info
 
