@@ -24,6 +24,8 @@ from .entity import YTLoungeEntity
 class YtLoungeSwitchEntityDescription(SwitchEntityDescription):
     """Describes YT Lounge entity."""
 
+    unavailable_when_offline: bool = False
+
     icon_fn: Callable[[YTLoungeDataUpdateCoordinator], Callable[[], Coroutine[Any, Any, None]]]
     set_fn: Callable[[YTLoungeDataUpdateCoordinator, bool], Callable[[], Coroutine[Any, Any, None]]]
 
@@ -33,6 +35,7 @@ YTLOUNGE_SWITCHES: tuple[YtLoungeSwitchEntityDescription, ...] = (
         name="autoplay",
         icon_fn=lambda is_on: "mdi:animation-play",
         set_fn=lambda coordinator, enabled: coordinator.command('set_auto_play_mode', enabled=enabled),
+        unavailable_when_offline=True
     ),
     YtLoungeSwitchEntityDescription(
         key="subscribed",
@@ -83,6 +86,13 @@ class YTLoungeSwitch(YTLoungeEntity, SwitchEntity, RestoreEntity):
             return
 
         await self.entity_description.set_fn(self.coordinator, last_state.state == STATE_ON)
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        if self.entity_description.unavailable_when_offline:
+            return self.coordinator.connected and self.coordinator.subscribed
+        return True
 
     @property
     def is_on(self) -> bool:

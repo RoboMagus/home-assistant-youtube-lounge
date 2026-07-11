@@ -65,6 +65,11 @@ class YTLoungeSelect(YTLoungeEntity, SelectEntity):
         self._attr_name = f"{self.device_name} {description.name}"
 
     @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return self.coordinator.connected and self.coordinator.subscribed
+
+    @property
     def options(self) -> list[str]:
         """Return a list of available options."""
         return self.entity_description.options_fn(self.coordinator.data)
