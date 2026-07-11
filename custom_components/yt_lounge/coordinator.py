@@ -50,6 +50,7 @@ class YtLoungeData:
     """Data from YouTube Lounge API."""
 
     connected: bool
+    connected_clients: list[Any]
     playback_state: PlaybackState
     mediaplayer_state: MediaPlayerState
 
@@ -128,8 +129,8 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             'autoplay': None,
             'playback_speed': None,
             'connected': False,
+            'connected_clients': [],
         }
-        self.connected_devices = []
 
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
@@ -258,7 +259,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         await self.async_request_refresh()
 
     async def handle_connected_device_changed(self, devices):
-        if self.auto_disconnect and len(devices) == 0 and len(self.connected_devices) > 0:
+        if self.auto_disconnect and len(devices) == 0 and len(self.live_data['connected_clients']) > 0:
             try:
                 LOGGER.info("Auto disconnect!")
                 await self.subscribe(False)
@@ -392,7 +393,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         devices = [d for d in devices if d["type"] == "REMOTE_CONTROL" and d["name"] != "HomeAssistant"]
         LOGGER.debug(f"Lounge status changed event: {json.dumps(devices, sort_keys=True, indent=4, default=lambda o: '<< Not JSON Serializable... >>')}")
         await self.handle_connected_device_changed(devices)
-        self.connected_devices = devices
+        self.live_data['connected_clients'] = [{"id": d.get("id"), "name": d.get("name"), "app": d.get("app"), "type": d.get("type")} for d in devices]
 
 
     async def unknown_event_raw(self, event_type: str, event: Any) -> None:
@@ -428,6 +429,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
 
         return YtLoungeData(
             self.live_data['connected'],
+            self.live_data['connected_clients'],
             self.live_data['state'],
             mediaplayer_state,
             self.live_data['playlist_items'],

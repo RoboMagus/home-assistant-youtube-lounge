@@ -56,6 +56,16 @@ YTLOUNGE_EXTENDED_SENSORS: tuple[YtLoungeExtendedSensorEntityDescription, ...] =
             "remaining": 0 if not getattr(data, "video_id") else len(l := getattr(data, "playlist_items")) - get_video_index(l, getattr(data, "video_id")) - 1
         },
     ),
+    YtLoungeExtendedSensorEntityDescription(
+        key="connected_clients",
+        name="connected clients",
+        icon="mdi:devices",
+        native_unit_of_measurement="",
+        state_fn=lambda data: len(getattr(data, 'connected_clients')),
+        attrs_fn=lambda data: {
+            "connected_clients": getattr(data, 'connected_clients')
+        },
+    ),
 )
 
 def get_video_index(playlist, vid):
