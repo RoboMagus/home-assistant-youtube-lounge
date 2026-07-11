@@ -53,6 +53,8 @@ class YtLoungeData:
     playback_state: PlaybackState
     mediaplayer_state: MediaPlayerState
 
+    playlist_items: list[Any]
+
     video_id: str | None
     video_title: str | None
     thumbnail_url: str | None
@@ -112,6 +114,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         self.last_video_id = None
         self.live_data = {
             'state': None,
+            'playlist_items': [],
             'video_id': None,
             'video_title': None,
             'channel': None,
@@ -273,6 +276,19 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         res = await self.hass.async_add_executor_job(request.execute)
         return list(set([sub['snippet']['language'] for sub in res['items']]))
 
+    async def expand_playlist(self, playlist_items):
+        async def format_details(id):
+            LOGGER.debug(f"format_details({id})")
+            info = {"id": id}
+            if self.yt_api:
+                data = await self.get_video_data(id)
+                info["title"] = data.get("title")
+                info["thumbnail"] = data.get("thumbnails", {}).get("maxres", {}).get("url")
+            return info
+
+        existing_items = {vid['id']: vid for vid in self.live_data['playlist_items']}
+        return [existing_items.get(id) or await format_details(id) for id in playlist_items]
+
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -292,6 +308,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         """Called when active video changes"""
         self.live_data['connected'] = True
         self.live_data['state'] = event.state
+        self.live_data['playlist_items'] = await self.expand_playlist(event.playlist_items)
         self.live_data['video_id'] = event.video_id
         self.live_data['current_time'] = event.current_time
         self.live_data['current_time_updated'] = utcnow()
@@ -407,6 +424,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             self.live_data['connected'],
             self.live_data['state'],
             mediaplayer_state,
+            self.live_data['playlist_items'],
             self.live_data['video_id'],
             self.live_data['video_title'],
             thumbnail_url,

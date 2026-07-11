@@ -2,20 +2,28 @@
 
 from __future__ import annotations
 
-from typing import cast
+from collections.abc import Callable, Coroutine, Mapping
+from dataclasses import dataclass
+from typing import cast, override, Any
 
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from .const import CONF_API_KEY
-from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
+from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator, YtLoungeData
 from .entity import YTLoungeEntity
 
+@dataclass(frozen=True, kw_only=True)
+class YtLoungeExtendedSensorEntityDescription(SensorEntityDescription):
+    """Describes YT Lounge entity."""
+
+    state_fn: Callable[[YtLoungeData], Callable[[], Coroutine[Any, Any, StateType]]]
+    attrs_fn: Callable[[YtLoungeData], Callable[[], Coroutine[Any, Any, Mapping[str, Any]]]]
 
 YTLOUNGE_BASE_SENSORS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
@@ -36,6 +44,18 @@ YTLOUNGE_API_SENSORS: tuple[SensorEntityDescription, ...] = (
         icon="mdi:badge-account-horizontal"
     ),
 )
+YTLOUNGE_EXTENDED_SENSORS: tuple[YtLoungeExtendedSensorEntityDescription, ...] = (
+    YtLoungeExtendedSensorEntityDescription(
+        key="playlist_items",
+        name="playlist items",
+        icon="mdi:playlist-play",
+        native_unit_of_measurement="",
+        state_fn=lambda data: len(getattr(data, 'playlist_items')),
+        attrs_fn=lambda data: {
+            "playlist_items": getattr(data, 'playlist_items'),
+        },
+    ),
+)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -47,6 +67,10 @@ async def async_setup_entry(
     async_add_entities(
         YTLoungeSensor(entry.runtime_data, description)
         for description in YTLOUNGE_BASE_SENSORS
+    )
+    async_add_entities(
+        YTLoungeExtendedSensor(entry.runtime_data, description)
+        for description in YTLOUNGE_EXTENDED_SENSORS
     )
 
     if entry.data.get(CONF_API_KEY):
@@ -78,3 +102,36 @@ class YTLoungeSensor(YTLoungeEntity, SensorEntity):
     def native_value(self) -> StateType:
         """Sensor status direct from live coordinator data."""
         return cast(StateType, getattr(self.coordinator.data, self.entity_description.key))
+
+class YTLoungeExtendedSensor(YTLoungeEntity, SensorEntity):
+    """YTLounge sensor."""
+
+    def __init__(
+        self,
+        coordinator: YTLoungeDataUpdateCoordinator,
+        description: YtLoungeExtendedSensorEntityDescription,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = f"{coordinator.screen_id}_{description.key}_sensor"
+        self._attr_name = f"{self.device_name} {description.name}"
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return self.coordinator.connected and self.coordinator.subscribed
+
+    @callback
+    @override
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._async_update_attrs()
+        super()._handle_coordinator_update()
+
+    @callback
+    def _async_update_attrs(self) -> None:
+        """Handle coordinator updates."""
+        if self.available:
+            self._attr_native_value = self.entity_description.state_fn(self.coordinator.data)
+            self._attr_extra_state_attributes = self.entity_description.attrs_fn(self.coordinator.data)
