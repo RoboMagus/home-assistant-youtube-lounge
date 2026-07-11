@@ -15,6 +15,7 @@ CONF_TV_CODE: Final = "tv_code"
 
 SERVICE_CONNECT = "connect"
 SERVICE_GET_NOW_PLAYING = "get_now_playing"
+SERVICE_GET_VIDEO_DETAILS = "get_video_details"
 SERVICE_RAW_COMMAND = "raw_command"
 SERVICE_SUBSCRIBE = "subscribe"
 

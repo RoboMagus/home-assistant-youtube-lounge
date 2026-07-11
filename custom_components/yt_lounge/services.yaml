@@ -16,6 +16,19 @@ get_now_playing:
           integration: yt_lounge
           domain: media_player
 
+get_video_details:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          integration: yt_lounge
+          domain: media_player
+    video_id:
+      required: true
+      selector:
+        text:
+
 subscribe:
   fields:
     entity_id:

@@ -76,6 +76,16 @@
       },
       "name": "get_now_playing"
     },
+    "get_video_details": {
+      "description": "get_video_details",
+      "fields": {
+        "entity_id": {
+          "description": "YTLounge entity",
+          "name": "Entity"
+        }
+      },
+      "name": "get_video_details"
+    },
     "subscribe": {
       "description": "Manually force (re-)subscribe.",
       "fields": {

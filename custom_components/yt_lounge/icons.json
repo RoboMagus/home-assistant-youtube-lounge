@@ -6,6 +6,9 @@
     "get_now_playing": {
       "service": "mdi:movie-search"
     },
+    "get_video_details": {
+      "service": "mdi:information-box"
+    },
     "raw_command": {
       "service": "mdi:bash"
     },

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from functools import partial
 import logging
 from typing import Any
 import voluptuous as vol
 
+from googleapiclient.discovery import build
 from pyytlounge import YtLoungeApi
 
 from homeassistant import exceptions
@@ -14,7 +16,6 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFl
 from homeassistant.core import callback, HomeAssistant
 
 from .const import CONF_API_KEY, CONF_AUTH_STATE, CONF_DEVICE_NAME, CONF_SCREEN_NAME, CONF_SCREEN_ID, CONF_TV_CODE, DOMAIN
-from .coordinator import _async_get_video_data
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +33,8 @@ STEP_RECONFIG_DATA_SCHEMA = vol.Schema(
 )
 
 async def _test_api_key(hass: HomeAssistant, key: str) -> bool:
-    details = await _async_get_video_data(hass, "jNQXAC9IVRw", key)
+    request = build('youtube', 'v3', cache_discovery=False, developerKey=key).videos().list(part='snippet', id="jNQXAC9IVRw")
+    details = await hass.async_add_executor_job(request.execute)
     LOGGER.debug(f"YT API Response: {details}")
     return True
 
@@ -85,7 +87,9 @@ class YTLoungeConfigFlow(ConfigFlow, domain=DOMAIN):
 
         try:
             if CONF_API_KEY in user_input:
-                api_key_valid = await _test_api_key(self.hass, user_input[CONF_API_KEY])
+                api_key_valid = await self.hass.async_add_executor_job(
+                    partial(_test_api_key, key=user_input[CONF_API_KEY])
+                )
                 if not api_key_valid:
                     raise InvalidApiKey
 

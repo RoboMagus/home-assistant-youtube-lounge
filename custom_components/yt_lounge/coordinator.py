@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from functools import partial
 import json
 import logging
 from typing import Any, Optional
@@ -78,21 +79,11 @@ def PlaybackState2MediaPlayerState(state: PlaybackState) -> MediaPlayerState:
 
     return state_map.get(state, MediaPlayerState.IDLE)
 
-async def _async_get_video_data(hass: HomeAssistant, video_id: str, api_key: str) -> dict:
-    youtube = build('youtube', 'v3', developerKey=api_key)
-    request = youtube.videos().list(part='snippet', id=video_id)
-    return await hass.async_add_executor_job(request.execute)
-
-async def _async_get_video_subtitles(hass: HomeAssistant, video_id: str, api_key: str) -> list:
-    youtube = build('youtube', 'v3', developerKey=api_key)
-    request = youtube.captions().list(part='snippet', videoId=video_id)
-    res = await hass.async_add_executor_job(request.execute)
-    return list(set([sub['snippet']['language'] for sub in res['items']]))
-
 class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventListener):
     """Data update coordinator for the YouTube Lounge integration."""
 
     config_entry: YTLoungeConfigEntry
+    yt_api = None
 
     def __init__(
         self,
@@ -139,6 +130,11 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
 
     async def async_initialize(self) -> None:
         """Initialize the coordinator."""
+
+        if (api_key := self.config_entry.data.get(CONF_API_KEY)):
+            self.yt_api = await self.hass.async_add_executor_job(
+                partial(build, "youtube", "v3", cache_discovery=False, developerKey=api_key)
+            )
 
         self.api_client.load_auth_state(self.config_entry.data[CONF_AUTH_STATE])
 
@@ -267,6 +263,16 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             except Exception:
                 pass
 
+    async def get_video_data(self, video_id: str) -> dict:
+        request = self.yt_api.videos().list(part='snippet', id=video_id)
+        res = await self.hass.async_add_executor_job(request.execute)
+        return res['items'][0]['snippet']
+
+    async def get_video_subtitles(self, video_id: str) -> list:
+        request = self.yt_api.captions().list(part='snippet', videoId=video_id)
+        res = await self.hass.async_add_executor_job(request.execute)
+        return list(set([sub['snippet']['language'] for sub in res['items']]))
+
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -379,10 +385,10 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         if (api_key := self.config_entry.data.get(CONF_API_KEY)) and (vid := self.live_data['video_id']):
             if vid != self.last_video_id or self.data.video_title is None:
                 self.last_video_id = vid
-                video_data = await _async_get_video_data(self.hass, vid, api_key)
-                self.live_data['video_title'] = video_data['items'][0]['snippet']['title']
-                self.live_data['channel'] = video_data['items'][0]['snippet']['channelTitle']
-                self.live_data['subtitle_options'] = await _async_get_video_subtitles(self.hass, vid, api_key)
+                video_data = await self.get_video_data(vid)
+                self.live_data['video_title'] = video_data['title']
+                self.live_data['channel'] = video_data['channelTitle']
+                self.live_data['subtitle_options'] = await self.get_video_subtitles(vid)
                 LOGGER.info(f"GetVideoData: Title: {self.live_data['video_title']}, Channel:{self.live_data['channel']}")
                 LOGGER.debug(f"Subtitles: {self.live_data['subtitle_options']}")
         else:

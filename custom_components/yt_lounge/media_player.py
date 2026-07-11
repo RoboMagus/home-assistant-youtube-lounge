@@ -26,12 +26,17 @@ from homeassistant.helpers.entity_platform import (
     async_get_current_platform,
 )
 
-from .const import DOMAIN, SERVICE_CONNECT, SERVICE_GET_NOW_PLAYING, SERVICE_RAW_COMMAND, SERVICE_SUBSCRIBE
+from .const import CONF_API_KEY, SERVICE_CONNECT, SERVICE_GET_NOW_PLAYING, SERVICE_GET_VIDEO_DETAILS, SERVICE_RAW_COMMAND, SERVICE_SUBSCRIBE
 from .coordinator import YTLoungeConfigEntry, YTLoungeDataUpdateCoordinator
 from .entity import YTLoungeEntity
 
 LOGGER = logging.getLogger(__name__)
 
+GET_VIDEO_DETAILS_SERVICE_SCHEMA = make_entity_service_schema(
+    {
+        vol.Required("video_id"): cv.string
+    }
+)
 RAW_COMMAND_SERVICE_SCHEMA = make_entity_service_schema(
     {
         vol.Required("command"): cv.string,
@@ -73,6 +78,13 @@ async def async_setup_entry(
         func="async_raw_command",
         supports_response=SupportsResponse.OPTIONAL
     )
+    if entry.data.get(CONF_API_KEY):
+        platform.async_register_entity_service(
+            name=SERVICE_GET_VIDEO_DETAILS,
+            schema=GET_VIDEO_DETAILS_SERVICE_SCHEMA,
+            func="async_get_video_details",
+            supports_response=SupportsResponse.ONLY
+        )
 
 class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
     """Represents a YTLounge Player device."""
@@ -113,6 +125,11 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
             "now_playing": r,
         }
 
+    async def async_get_video_details(self, video_id: str) -> ServiceResponse:
+        """Get video details Service-Call."""
+        r = await self.coordinator.get_video_data(video_id)
+        return r
+
     async def async_subscribe(self) -> ServiceResponse:
         """Subscribe Service-Call."""
         t0 = time()
@@ -122,7 +139,7 @@ class YTLoungeMediaPlayer(YTLoungeEntity, MediaPlayerEntity):
             "time_elapsed": t1-t0,
         }
 
-    async def async_raw_command(self, command: str, args: Any) -> ServiceResponse:
+    async def async_raw_command(self, command: str, args: Any = None) -> ServiceResponse:
         """Connect Service-Call."""
         LOGGER.info(f"async_raw_command({command}, {args})")
         res = await self.coordinator.command('_command', command=command, command_parameters=args)
