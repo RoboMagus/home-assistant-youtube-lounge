@@ -287,7 +287,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             return info
 
         existing_items = {vid['id']: vid for vid in self.live_data['playlist_items']}
-        return [existing_items.get(id) or await format_details(id) for id in playlist_items]
+        return [existing_items.get(id) or await format_details(id) for id in playlist_items if id]
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     #   YTLounge Event listener hooks
@@ -308,13 +308,15 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         """Called when active video changes"""
         self.live_data['connected'] = True
         self.live_data['state'] = event.state
-        self.live_data['playlist_items'] = await self.expand_playlist(event.playlist_items)
+        # When a new video starts loading playlist parameter may be empty!
+        if event.playlist_items and event.playlist_items[0] != "":
+            self.live_data['playlist_items'] = await self.expand_playlist(event.playlist_items)
         self.live_data['video_id'] = event.video_id
         self.live_data['current_time'] = event.current_time
         self.live_data['current_time_updated'] = utcnow()
         self.live_data['duration'] = event.duration
         LOGGER.debug(
-            f"New state: {event.state} = id: {event.video_id} pos: {event.current_time} duration: {event.duration}"
+            f"New state: {event.state} = id: {event.video_id} pos: {event.current_time} duration: {event.duration}, playlist: {event.playlist_items}"
         )
         await self.async_refresh()
 

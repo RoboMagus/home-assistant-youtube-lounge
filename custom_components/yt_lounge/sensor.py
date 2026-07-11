@@ -53,9 +53,16 @@ YTLOUNGE_EXTENDED_SENSORS: tuple[YtLoungeExtendedSensorEntityDescription, ...] =
         state_fn=lambda data: len(getattr(data, 'playlist_items')),
         attrs_fn=lambda data: {
             "playlist_items": getattr(data, 'playlist_items'),
+            "remaining": 0 if not getattr(data, "video_id") else len(l := getattr(data, "playlist_items")) - get_video_index(l, getattr(data, "video_id")) - 1
         },
     ),
 )
+
+def get_video_index(playlist, vid):
+    for i, v in enumerate(playlist):
+        if v.get("id") == vid:
+            return i
+    return 0
 
 async def async_setup_entry(
     hass: HomeAssistant,
