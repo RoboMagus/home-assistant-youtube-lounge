@@ -1,7 +1,8 @@
 ---
 name: "Bug report"
-description: "Report a bug with the custom integration"
+title: "[Bug]: "
 labels: ["bug"]
+description: "Report a bug with the custom integration"
 body:
   - type: markdown
     attributes:
@@ -36,7 +37,7 @@ body:
           required: true
         - label: This issue only contains 1 issue (if you have multiple issues, open one issue for each issue).
           required: true
-        - label: This issue is not a duplicate issue of any [previous issues](https://github.com/RoboMagus/home-assistant-youtube-lounge/issues?q=is%3Aissue+label%3A%22Bug%22+)..
+        - label: This issue is not a duplicate issue of any [previous issues](https://github.com/RoboMagus/home-assistant-youtube-lounge/issues?q=is%3Aissue+label%3A%22bug%22+).
           required: true
   - type: textarea
     attributes:

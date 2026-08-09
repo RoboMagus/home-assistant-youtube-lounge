@@ -1,7 +1,8 @@
 ---
 name: "Feature request"
+title: "[FR]: "
+labels: ["enhancement"]
 description: "Suggest an idea for this custom integration"
-labels: ["Feature request"]
 body:
   - type: markdown
     attributes:
@@ -14,7 +15,7 @@ body:
           required: true
         - label: This only contains 1 feature request (if you have multiple feature requests, open one feature request for each feature request).
           required: true
-        - label: This issue is not a duplicate feature request of [previous feature requests](https://github.com/RoboMagus/home-assistant-youtube-lounge/issues?q=is%3Aissue+label%3A%22Feature+Request%22+).
+        - label: This issue is not a duplicate feature request of [previous feature requests](https://github.com/RoboMagus/home-assistant-youtube-lounge/issues?q=is%3Aissue+label%3A%22enhancement%22).
           required: true
 
   - type: textarea
