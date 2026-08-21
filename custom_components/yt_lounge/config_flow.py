@@ -32,9 +32,9 @@ STEP_RECONFIG_DATA_SCHEMA = vol.Schema(
     }
 )
 
-async def _test_api_key(hass: HomeAssistant, key: str) -> bool:
+def _test_api_key(key: str) -> bool:
     request = build('youtube', 'v3', cache_discovery=False, developerKey=key).videos().list(part='snippet', id="jNQXAC9IVRw")
-    details = await hass.async_add_executor_job(request.execute)
+    details = request.execute()
     LOGGER.debug(f"YT API Response: {details}")
     return True
 
