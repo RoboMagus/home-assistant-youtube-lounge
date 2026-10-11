@@ -208,6 +208,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         return await f(**kwargs)
 
     async def set_auto_disconnect(self, enable: bool):
+        LOGGER.info(f"set_auto_disconnect({enable})")
         self.auto_disconnect = enable
         await self.async_request_refresh()
 
@@ -237,16 +238,21 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
             if enable:
                 async def subscribe_keepalive():
                     while True:
-                        t0 = time()
-                        if not self.linked:
-                            LOGGER.info(f"Client not linked in subscribe task, trying to refresh auth...")
-                            await self.refresh_auth(utcnow())
-                        if not self.connected:
-                            LOGGER.info("Client not connected in subscribe task, trying to connect...")
-                            await self.api_client.connect()
-                        await self.api_client.subscribe()
-                        t1 = time()
-                        LOGGER.info(f"Subscribe Keepalive; refresh after {t1 - t0}")
+                        try:
+                            t0 = time()
+                            if not self.linked:
+                                LOGGER.info(f"Client not linked in subscribe task, trying to refresh auth...")
+                                await self.refresh_auth(utcnow())
+                            if not self.connected:
+                                LOGGER.info("Client not connected in subscribe task, trying to connect...")
+                                await self.api_client.connect()
+                            await self.api_client.subscribe()
+                            t1 = time()
+                            LOGGER.info(f"Subscribe Keepalive; refresh after {t1 - t0}")
+                        except Exception as e:
+                            t1 = time()
+                            LOGGER.error(f"Subscribe task exception after {t1-t0}: {e}")
+
 
                 self.subscribe_task = asyncio.create_task(subscribe_keepalive(), name="YtLounge-Subscribe")
                 async_call_later(self.hass, timedelta(seconds=5), self.get_now_playing)
@@ -383,7 +389,7 @@ class YTLoungeDataUpdateCoordinator(DataUpdateCoordinator[YtLoungeData], EventLi
         self.live_data['subtitle_options'] = []
         LOGGER.info(f"Disconnected with Reason: {event.reason}")
         if self.subscribed:
-            self.subscribe(False)
+            await self.subscribe(False)
         await self.async_request_refresh()
 
     async def lounge_status_changed_raw(self, event: Any) -> None:
