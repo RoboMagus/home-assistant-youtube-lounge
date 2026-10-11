@@ -1,6 +1,6 @@
 {
   "name": "HA YouTube Lounge Dev Container",
-  "image": "ghcr.io/home-assistant/home-assistant:2026.5",
+  "image": "ghcr.io/home-assistant/home-assistant:2026.9",
   "postCreateCommand": "bash .devcontainer/scripts/setup.sh",
   "postStartCommand": "bash .devcontainer/scripts/run.sh",
   "containerEnv": {
